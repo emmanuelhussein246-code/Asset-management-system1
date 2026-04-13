@@ -1,0 +1,69 @@
+{% extends 'assets_app/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block breadcrumb %}SPH / STAFF / ADD{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-left">
+    <h1 class="page-heading">{{ title }}</h1>
+    <p class="page-sub">Create a new staff account with system access.</p>
+  </div>
+</div>
+
+<div class="card" style="max-width:680px;">
+  <div class="card-header"><span class="card-title">Account Details</span></div>
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% if form.errors %}
+      <div class="alert alert-error" style="margin-bottom:16px;">
+        Please correct the errors below.
+        {% for field in form %}{% for err in field.errors %}<br/>• {{ field.label }}: {{ err }}{% endfor %}{% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>First Name</label>
+          {{ form.first_name }}
+        </div>
+        <div class="form-group">
+          <label>Last Name</label>
+          {{ form.last_name }}
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          {{ form.email }}
+        </div>
+        <div class="form-group">
+          <label>Phone — optional</label>
+          {{ form.phone }}
+        </div>
+        <div class="form-group">
+          <label>Username</label>
+          {{ form.username }}
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          {{ form.password }}
+          <div class="form-hint">{{ form.password.help_text }}</div>
+        </div>
+        <div class="form-group">
+          <label>Role</label>
+          {{ form.role }}
+        </div>
+        <div class="form-group">
+          <label>Department</label>
+          {{ form.department }}
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <a href="{% url 'staff_list' %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">Create Account →</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

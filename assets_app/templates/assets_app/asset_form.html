@@ -1,0 +1,114 @@
+{% extends 'assets_app/base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block breadcrumb %}SPH / ASSETS / {{ title|upper }}{% endblock %}
+{% block topbar_title %}{{ title }}{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-left">
+    <h1 class="page-heading">{{ title }}</h1>
+    <p class="page-sub">{% if asset %}Updating existing asset record.{% else %}Register a new physical asset into the system.{% endif %}</p>
+  </div>
+  <div class="page-header-right">
+    <a href="{% if asset %}{% url 'asset_detail' asset.pk %}{% else %}{% url 'asset_list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+  </div>
+</div>
+
+<div class="card" style="max-width:860px;">
+  <div class="card-header">
+    <span class="card-title">Asset Details</span>
+    <span style="font-size:12px;color:var(--mist);font-family:var(--font-mono);">All fields required unless marked optional</span>
+  </div>
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <!-- Errors -->
+      {% if form.errors %}
+      <div class="alert alert-error" style="margin-bottom:20px;">
+        Please correct the errors below.
+        {% for field in form %}{% for err in field.errors %}<br/>• {{ field.label }}: {{ err }}{% endfor %}{% endfor %}
+        {% for err in form.non_field_errors %}<br/>• {{ err }}{% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Asset Name</label>
+          {{ form.asset_name }}
+          {% if form.asset_name.errors %}<div style="color:var(--red);font-size:12px;">{{ form.asset_name.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="form-group">
+          <label>Asset Label</label>
+          {{ form.asset_label }}
+          <div class="form-hint">Format: SPH-[TYPE]-[NUMBER] — must match the physical label on the asset</div>
+          {% if form.asset_label.errors %}<div style="color:var(--red);font-size:12px;">{{ form.asset_label.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="form-group">
+          <label>Asset Type</label>
+          {{ form.asset_type }}
+        </div>
+
+        <div class="form-group">
+          <label>Department</label>
+          {{ form.department }}
+        </div>
+
+        <div class="form-group">
+          <label>Status</label>
+          {{ form.status }}
+        </div>
+
+        <div class="form-group">
+          <label>Acquisition Date</label>
+          {{ form.acquisition_date }}
+        </div>
+
+        <div class="form-group">
+          <label>Acquired By (Name)</label>
+          {{ form.acquired_by_name }}
+          <div class="form-hint">Full name of person who received the asset</div>
+        </div>
+
+        <div class="form-group">
+          <label>Acquired By (Staff Account) — optional</label>
+          {{ form.acquired_by_user }}
+        </div>
+
+        <div class="form-group">
+          <label>Serial Number — optional</label>
+          {{ form.serial_number }}
+        </div>
+
+        <div class="form-group">
+          <label>Next Maintenance Date — optional</label>
+          {{ form.next_maintenance }}
+        </div>
+
+        <div class="form-group full">
+          <label>Description</label>
+          {{ form.description }}
+          <div class="form-hint">Condition, colour, specs, any distinguishing features</div>
+        </div>
+
+        <div class="form-group full">
+          <label>Notes — optional</label>
+          {{ form.notes }}
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <a href="{% if asset %}{% url 'asset_detail' asset.pk %}{% else %}{% url 'asset_list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">
+          {% if asset %}Save Changes{% else %}Register Asset{% endif %} →
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

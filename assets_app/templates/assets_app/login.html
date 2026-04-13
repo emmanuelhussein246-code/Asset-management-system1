@@ -1,0 +1,95 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign In — Swahilipot Hub Asset System</title>
+  <link rel="stylesheet" href="{% static 'css/main.css' %}"/>
+</head>
+<body>
+<div class="login-page">
+
+  <!-- LEFT PANEL -->
+  <div class="login-left">
+    <div class="login-brand">
+      <div class="login-brand-icon">SP</div>
+      <div>
+        <div class="login-brand-name">Swahilipot Hub</div>
+        <div class="login-brand-sub" style="font-size:11px;color:rgba(255,255,255,0.35);">Mombasa, Kenya</div>
+      </div>
+    </div>
+
+    <div class="login-hero">
+      <div class="login-tagline">
+        Assets.<br/>
+        Accountability.<br/>
+        <span>Clarity.</span>
+      </div>
+      <p class="login-desc">
+        Internal asset management platform for tracking, checkout, and maintenance of all Swahilipot Hub resources.
+      </p>
+      <div class="login-feat">
+        <div class="login-feat-item"><div class="login-feat-dot"></div>Full asset registry with labels &amp; history</div>
+        <div class="login-feat-item"><div class="login-feat-dot"></div>Check-in / Check-out tracking</div>
+        <div class="login-feat-item"><div class="login-feat-dot"></div>Automated audit trail on every action</div>
+        <div class="login-feat-item"><div class="login-feat-dot"></div>Maintenance scheduling &amp; overdue alerts</div>
+      </div>
+    </div>
+
+    <div class="login-footer-text">Phase 1 — Administration Department</div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="login-right">
+    <div class="login-form-box">
+      <div class="login-form-title">Welcome back</div>
+      <div class="login-form-sub">Sign in with your staff credentials to continue.</div>
+
+      {% if messages %}
+        {% for msg in messages %}
+        <div class="login-alert">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="login-form-group">
+          <label for="id_username">Username</label>
+          <input
+            type="text"
+            id="id_username"
+            name="username"
+            class="login-input"
+            placeholder="Enter your username"
+            autocomplete="username"
+            required
+          />
+        </div>
+
+        <div class="login-form-group">
+          <label for="id_password">Password</label>
+          <input
+            type="password"
+            id="id_password"
+            name="password"
+            class="login-input"
+            placeholder="Enter your password"
+            autocomplete="current-password"
+            required
+          />
+        </div>
+
+        <button type="submit" class="login-submit">Sign In →</button>
+      </form>
+
+      <p style="margin-top:24px;font-size:12px;color:var(--mist);text-align:center;">
+        Access restricted to authorised Swahilipot Hub staff only.
+      </p>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

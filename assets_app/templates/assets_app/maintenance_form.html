@@ -1,0 +1,55 @@
+{% extends 'assets_app/base.html' %}
+{% block title %}Add Maintenance Task{% endblock %}
+{% block breadcrumb %}SPH / MAINTENANCE / ADD{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-left">
+    <h1 class="page-heading">Add Maintenance Task</h1>
+    <p class="page-sub">For asset <strong class="text-mono">{{ asset.asset_label }}</strong> — {{ asset.asset_name }}</p>
+  </div>
+</div>
+
+<div class="card" style="max-width:580px;">
+  <div class="card-header"><span class="card-title">Task Details</span></div>
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% if form.errors %}
+      <div class="alert alert-error" style="margin-bottom:16px;">Please correct the errors below.</div>
+      {% endif %}
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Task Title</label>
+          {{ form.title }}
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          {{ form.status }}
+        </div>
+        <div class="form-group">
+          <label>Assigned To</label>
+          {{ form.assigned_to }}
+        </div>
+        <div class="form-group">
+          <label>Scheduled Date</label>
+          {{ form.scheduled_date }}
+        </div>
+        <div class="form-group">
+          <label>Completed Date — optional</label>
+          {{ form.completed_date }}
+        </div>
+        <div class="form-group full">
+          <label>Details — optional</label>
+          {{ form.details }}
+        </div>
+      </div>
+      <div class="form-actions">
+        <a href="{% url 'asset_detail' asset.pk %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">Add Task →</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends 'assets_app/base.html' %}
+{% block title %}Delete Asset{% endblock %}
+{% block breadcrumb %}SPH / ASSETS / DELETE{% endblock %}
+{% block content %}
+<div class="confirm-box">
+  <div class="card">
+    <div class="card-body" style="text-align:center;padding:48px 36px;">
+      <div class="confirm-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+          <path d="M10 11v6"/><path d="M14 11v6"/>
+          <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+        </svg>
+      </div>
+      <h2 class="page-heading" style="margin-bottom:8px;">Delete Asset?</h2>
+      <p style="color:var(--mist);font-size:13.5px;margin-bottom:8px;">
+        You are about to permanently delete:
+      </p>
+      <p style="font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--ocean);margin-bottom:6px;">
+        {{ asset.asset_label }}
+      </p>
+      <p style="font-size:14px;color:var(--slate);margin-bottom:28px;">{{ asset.asset_name }}</p>
+      <p style="color:var(--red);font-size:13px;margin-bottom:28px;">
+        This action cannot be undone. All checkout history for this asset will also be removed.
+      </p>
+      <form method="post">
+        {% csrf_token %}
+        <div style="display:flex;gap:10px;justify-content:center;">
+          <a href="{% url 'asset_detail' asset.pk %}" class="btn btn-secondary">Cancel — Keep Asset</a>
+          <button type="submit" class="btn btn-danger">Yes, Delete Permanently</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,191 @@
+{% extends 'assets_app/base.html' %}
+
+{% block title %}{{ asset.asset_label }}{% endblock %}
+{% block breadcrumb %}SPH / ASSETS / {{ asset.asset_label }}{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'asset_edit' asset.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+  {% if asset.status != 'in_use' %}
+  <a href="{% url 'asset_checkout' asset.pk %}" class="btn btn-ocean btn-sm">Check Out</a>
+  {% endif %}
+  {% if active_checkout %}
+  <a href="{% url 'asset_checkin' active_checkout.pk %}" class="btn btn-primary btn-sm">Return Asset</a>
+  {% endif %}
+  <a href="{% url 'asset_delete' asset.pk %}" class="btn btn-danger btn-sm">Delete</a>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="asset-label-hero">
+      {{ asset.asset_label }}
+      <span class="badge badge-{{ asset.get_status_color }}">
+        <span class="badge-dot"></span>
+        {{ asset.get_status_display }}
+      </span>
+      {% if asset.is_overdue_maintenance %}
+      <span class="overdue-chip">⚠ Maintenance Overdue</span>
+      {% endif %}
+    </div>
+    <h1 class="page-heading" style="font-size:20px;margin-top:6px;">{{ asset.asset_name }}</h1>
+  </div>
+  <div class="page-header-right">
+    <a href="{% url 'maintenance_add' asset.pk %}" class="btn btn-secondary btn-sm">+ Maintenance Task</a>
+  </div>
+</div>
+
+<div class="detail-grid">
+
+  <!-- LEFT COLUMN -->
+  <div style="display:flex;flex-direction:column;gap:20px;">
+
+    <!-- Asset Details -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Asset Information</span></div>
+      <div class="card-body">
+        <div class="detail-row">
+          <div class="detail-key">Asset Label</div>
+          <div class="detail-val text-mono">{{ asset.asset_label }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-key">Asset Name</div>
+          <div class="detail-val">{{ asset.asset_name }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-key">Type</div>
+          <div class="detail-val">{{ asset.get_asset_type_display }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-key">Department</div>
+          <div class="detail-val">{{ asset.department }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-key">Description</div>
+          <div class="detail-val">{{ asset.description }}</div>
+        </div>
+        {% if asset.serial_number %}
+        <div class="detail-row">
+          <div class="detail-key">Serial Number</div>
+          <div class="detail-val text-mono">{{ asset.serial_number }}</div>
+        </div>
+        {% endif %}
+        <div class="detail-row">
+          <div class="detail-key">Acquired By</div>
+          <div class="detail-val">{{ asset.acquired_by_name }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-key">Acquisition Date</div>
+          <div class="detail-val text-mono">{{ asset.acquisition_date }}</div>
+        </div>
+        {% if asset.next_maintenance %}
+        <div class="detail-row">
+          <div class="detail-key">Next Maintenance</div>
+          <div class="detail-val text-mono {% if asset.is_overdue_maintenance %}text-danger{% endif %}">
+            {{ asset.next_maintenance }}
+            {% if asset.is_overdue_maintenance %}<span class="overdue-chip">Overdue</span>{% endif %}
+          </div>
+        </div>
+        {% endif %}
+        {% if asset.notes %}
+        <div class="detail-row">
+          <div class="detail-key">Notes</div>
+          <div class="detail-val">{{ asset.notes }}</div>
+        </div>
+        {% endif %}
+        <div class="detail-row">
+          <div class="detail-key">Registered By</div>
+          <div class="detail-val">{{ asset.registered_by.get_full_name|default:"System" }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-key">Last Updated</div>
+          <div class="detail-val text-mono" style="font-size:12px;">{{ asset.updated_at }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Checkout History -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Checkout History</span>
+        {% if asset.status != 'in_use' %}
+        <a href="{% url 'asset_checkout' asset.pk %}" class="btn btn-ocean btn-sm">Check Out</a>
+        {% endif %}
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Person</th>
+              <th>Purpose</th>
+              <th>Checked Out</th>
+              <th>Expected Return</th>
+              <th>Returned</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for co in checkouts %}
+            <tr>
+              <td class="fw-bold">{{ co.checked_out_by_name }}</td>
+              <td class="text-muted">{{ co.purpose|default:"—" }}</td>
+              <td class="text-mono" style="font-size:12px;">{{ co.checked_out_at|date:"d M Y" }}</td>
+              <td class="text-mono" style="font-size:12px;">{{ co.expected_return|default:"—" }}
+                {% if co.is_overdue %}<span class="overdue-chip">Late</span>{% endif %}
+              </td>
+              <td class="text-mono" style="font-size:12px;">{{ co.returned_at|date:"d M Y"|default:"—" }}</td>
+              <td>
+                {% if co.is_returned %}
+                <span class="badge badge-success"><span class="badge-dot"></span>Returned</span>
+                {% else %}
+                <span class="badge badge-warning"><span class="badge-dot"></span>Out</span>
+                {% if co.pk == active_checkout.pk %}
+                <a href="{% url 'asset_checkin' co.pk %}" class="btn btn-primary btn-sm" style="margin-left:6px;">Return</a>
+                {% endif %}
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" style="text-align:center;color:var(--mist);padding:24px;">No checkout history.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Maintenance Records</span>
+        <a href="{% url 'maintenance_add' asset.pk %}" class="btn btn-secondary btn-sm">+ Add</a>
+      </div>
+      <div class="card-body" style="padding:12px 16px;">
+        {% for rec in maintenance %}
+        <div style="padding:12px 0;border-bottom:1px solid rgba(10,61,74,0.06);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <strong style="font-size:13px;color:var(--charcoal);">{{ rec.title }}</strong>
+            <span class="badge badge-{% if rec.status == 'done' %}success{% elif rec.status == 'in_progress' %}info{% else %}secondary{% endif %}">
+              {{ rec.get_status_display }}
+            </span>
+          </div>
+          <div style="font-size:12px;color:var(--mist);font-family:var(--font-mono);">
+            Scheduled: {{ rec.scheduled_date }}
+            {% if rec.assigned_to %} · {{ rec.assigned_to.get_full_name }}{% endif %}
+          </div>
+          {% if rec.details %}<div style="font-size:12.5px;color:var(--slate);margin-top:4px;">{{ rec.details }}</div>{% endif %}
+        </div>
+        {% empty %}
+        <div class="empty-state" style="padding:32px 0;">
+          <div class="empty-title" style="font-size:14px;">No maintenance records</div>
+          <div class="empty-text" style="font-size:12.5px;">Add a task to schedule servicing.</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

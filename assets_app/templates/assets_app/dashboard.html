@@ -1,0 +1,145 @@
+{% extends 'assets_app/base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+{% block breadcrumb %}SPH / DASHBOARD{% endblock %}
+{% block topbar_title %}Overview{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'asset_add' %}" class="btn btn-primary btn-sm">
+    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Add Asset
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<!-- STAT CARDS -->
+<div class="stats-grid">
+  <div class="stat-card primary">
+    <div class="stat-label">Total Assets</div>
+    <div class="stat-value">{{ total_assets }}</div>
+    <div class="stat-note">All registered assets</div>
+  </div>
+  <div class="stat-card success">
+    <div class="stat-label">Available</div>
+    <div class="stat-value">{{ available }}</div>
+    <div class="stat-note">Ready for use</div>
+  </div>
+  <div class="stat-card info">
+    <div class="stat-label">In Use</div>
+    <div class="stat-value">{{ in_use }}</div>
+    <div class="stat-note">Currently checked out</div>
+  </div>
+  <div class="stat-card warning">
+    <div class="stat-label">Maintenance</div>
+    <div class="stat-value">{{ maintenance_count }}</div>
+    <div class="stat-note">Under servicing</div>
+  </div>
+  <div class="stat-card danger">
+    <div class="stat-label">Lost</div>
+    <div class="stat-value">{{ lost_count }}</div>
+    <div class="stat-note">Marked as lost</div>
+  </div>
+  <div class="stat-card danger">
+    <div class="stat-label">Overdue Maintenance</div>
+    <div class="stat-value">{{ overdue_maintenance }}</div>
+    <div class="stat-note">Passed scheduled date</div>
+  </div>
+</div>
+
+<!-- MAIN GRID -->
+<div class="dashboard-grid">
+
+  <!-- LEFT: Dept breakdown + recent assets -->
+  <div style="display:flex;flex-direction:column;gap:20px;">
+
+    <!-- Department Breakdown -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Assets by Department</span>
+      </div>
+      <div class="card-body">
+        {% for dept in dept_stats %}
+        <div class="dept-bar-row">
+          <div class="dept-bar-name">{{ dept.name }}</div>
+          <div class="dept-bar-track">
+            <div class="dept-bar-fill" style="width:{% if total_assets %}{% widthratio dept.total total_assets 100 %}{% else %}0{% endif %}%"></div>
+          </div>
+          <div class="dept-bar-count">{{ dept.total }}</div>
+        </div>
+        {% empty %}
+        <p class="text-muted" style="font-size:13px;">No departments found.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Recent Assets -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Recently Registered</span>
+        <a href="{% url 'asset_list' %}" class="btn btn-secondary btn-sm">View All</a>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th>Name</th>
+              <th>Department</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for asset in recent_assets %}
+            <tr>
+              <td><a href="{% url 'asset_detail' asset.pk %}" class="td-label" style="text-decoration:none;">{{ asset.asset_label }}</a></td>
+              <td class="td-name">{{ asset.asset_name }}</td>
+              <td class="text-muted">{{ asset.department }}</td>
+              <td>
+                <span class="badge badge-{{ asset.get_status_color }}">
+                  <span class="badge-dot"></span>
+                  {{ asset.get_status_display }}
+                </span>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" style="text-align:center;color:var(--mist);padding:24px;">No assets yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: Activity Feed -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Recent Activity</span>
+      <a href="{% url 'audit_log' %}" class="btn btn-secondary btn-sm">Full Log</a>
+    </div>
+    <div class="card-body" style="padding:16px 20px;">
+      {% for log in recent_logs %}
+      <div class="activity-item">
+        <div class="activity-dot" style="background:
+          {% if log.action == 'asset_created' %}var(--green)
+          {% elif log.action == 'asset_deleted' %}var(--red)
+          {% elif log.action == 'checkout' %}var(--amber)
+          {% elif log.action == 'checkin' %}var(--green)
+          {% elif log.action == 'maintenance_added' %}var(--mist)
+          {% else %}var(--teal){% endif %}
+        "></div>
+        <div class="activity-text">
+          {% if log.asset_label %}<strong style="font-family:var(--font-mono);font-size:11px;">{{ log.asset_label }}</strong> — {% endif %}
+          {{ log.description|truncatechars:80 }}
+        </div>
+        <div class="activity-time">{{ log.timestamp|timesince }} ago</div>
+      </div>
+      {% empty %}
+      <p class="text-muted" style="font-size:13px;text-align:center;padding:24px 0;">No activity yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

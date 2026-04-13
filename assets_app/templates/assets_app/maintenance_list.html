@@ -1,0 +1,89 @@
+{% extends 'assets_app/base.html' %}
+{% block title %}Maintenance{% endblock %}
+{% block breadcrumb %}SPH / MAINTENANCE{% endblock %}
+{% block topbar_title %}Maintenance{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-left">
+    <h1 class="page-heading">Maintenance Schedule</h1>
+    <p class="page-sub">{{ records.count }} task{{ records.count|pluralize }} · {{ overdue.count }} overdue</p>
+  </div>
+</div>
+
+<!-- Filter -->
+<div class="filter-bar">
+  <form method="get" style="display:flex;gap:10px;align-items:center;width:100%;">
+    <label style="font-size:12px;color:var(--mist);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.05em;">Filter by status:</label>
+    <select name="status" class="form-input filter-select">
+      <option value="">All Statuses</option>
+      {% for val, label in status_choices %}
+      <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-ocean btn-sm">Apply</button>
+    {% if status_filter %}<a href="{% url 'maintenance_list' %}" class="btn btn-secondary btn-sm">Clear</a>{% endif %}
+  </form>
+</div>
+
+{% if overdue and not status_filter %}
+<div class="alert alert-warning" style="margin-bottom:16px;">
+  ⚠ {{ overdue.count }} maintenance task{{ overdue.count|pluralize }} are overdue. Please review and update.
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Asset</th>
+          <th>Task</th>
+          <th>Status</th>
+          <th>Assigned To</th>
+          <th>Scheduled</th>
+          <th>Completed</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rec in records %}
+        <tr>
+          <td>
+            <a href="{% url 'asset_detail' rec.asset.pk %}" class="td-label" style="text-decoration:none;">{{ rec.asset.asset_label }}</a>
+            <div style="font-size:12px;color:var(--mist);">{{ rec.asset.department }}</div>
+          </td>
+          <td>
+            <div class="td-name">{{ rec.title }}</div>
+            {% if rec.details %}<div style="font-size:12px;color:var(--mist);">{{ rec.details|truncatechars:60 }}</div>{% endif %}
+          </td>
+          <td>
+            <span class="badge badge-{% if rec.status == 'done' %}success{% elif rec.status == 'in_progress' %}info{% else %}secondary{% endif %}">
+              <span class="badge-dot"></span>{{ rec.get_status_display }}
+            </span>
+          </td>
+          <td class="text-muted">{{ rec.assigned_to.get_full_name|default:"Unassigned" }}</td>
+          <td class="text-mono" style="font-size:12px;">
+            {{ rec.scheduled_date }}
+            {% if rec.status != 'done' and rec.scheduled_date < today %}
+            <span class="overdue-chip">Overdue</span>
+            {% endif %}
+          </td>
+          <td class="text-mono" style="font-size:12px;">{{ rec.completed_date|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">
+            <div class="empty-state">
+              <div class="empty-title">No maintenance tasks</div>
+              <div class="empty-text">Add maintenance tasks from any asset's detail page.</div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends 'assets_app/base.html' %}
+{% block title %}Audit Log{% endblock %}
+{% block breadcrumb %}SPH / AUDIT{% endblock %}
+{% block topbar_title %}Audit Log{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-left">
+    <h1 class="page-heading">Audit Log</h1>
+    <p class="page-sub">Immutable record of all system actions</p>
+  </div>
+</div>
+
+<!-- Filter -->
+<div class="filter-bar">
+  <form method="get" style="display:flex;gap:10px;align-items:center;width:100%;flex-wrap:wrap;">
+    <div class="search-input-wrap" style="flex:1;min-width:180px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+      </svg>
+      <input type="text" name="q" value="{{ query }}" placeholder="Search asset label, description, user…" class="form-input"/>
+    </div>
+    <select name="action" class="form-input filter-select">
+      <option value="">All Actions</option>
+      {% for val, label in action_choices %}
+      <option value="{{ val }}" {% if action_filter == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-ocean btn-sm">Filter</button>
+    {% if query or action_filter %}<a href="{% url 'audit_log' %}" class="btn btn-secondary btn-sm">Clear</a>{% endif %}
+  </form>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Action</th>
+          <th>Asset</th>
+          <th>Department</th>
+          <th>Performed By</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td class="text-mono" style="font-size:11.5px;white-space:nowrap;">{{ log.timestamp|date:"d M Y H:i" }}</td>
+          <td>
+            <span class="badge badge-{{ log.get_action_color }}">{{ log.get_action_display }}</span>
+          </td>
+          <td class="td-label">{{ log.asset_label|default:"—" }}</td>
+          <td class="text-muted">{{ log.department|default:"—" }}</td>
+          <td class="fw-bold" style="font-size:13px;">{{ log.performed_by.get_full_name|default:"System" }}</td>
+          <td class="text-muted" style="font-size:12.5px;">{{ log.description|truncatechars:100 }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">
+            <div class="empty-state">
+              <div class="empty-title">No log entries</div>
+              <div class="empty-text">Actions will appear here as you use the system.</div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

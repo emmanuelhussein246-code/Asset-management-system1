@@ -1,0 +1,126 @@
+{% extends 'assets_app/base.html' %}
+
+{% block title %}Asset Registry{% endblock %}
+{% block breadcrumb %}SPH / ASSETS{% endblock %}
+{% block topbar_title %}Asset Registry{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'asset_add' %}" class="btn btn-primary btn-sm">
+    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Add Asset
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-left">
+    <h1 class="page-heading">Asset Registry</h1>
+    <p class="page-sub">{{ assets.count }} asset{{ assets.count|pluralize }} found</p>
+  </div>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <form method="get">
+    <div class="search-input-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+      </svg>
+      <input type="text" name="q" value="{{ query }}" placeholder="Search assets, labels, acquirer…" class="form-input"/>
+    </div>
+
+    <select name="dept" class="form-input filter-select">
+      <option value="">All Departments</option>
+      {% for dept in departments %}
+      <option value="{{ dept.pk }}" {% if dept_id == dept.pk|stringformat:"s" %}selected{% endif %}>{{ dept.name }}</option>
+      {% endfor %}
+    </select>
+
+    <select name="type" class="form-input filter-select">
+      <option value="">All Types</option>
+      {% for val, label in type_choices %}
+      <option value="{{ val }}" {% if type_filter == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+
+    <select name="status" class="form-input filter-select">
+      <option value="">All Statuses</option>
+      {% for val, label in status_choices %}
+      <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+
+    <button type="submit" class="btn btn-ocean btn-sm">Filter</button>
+    {% if query or dept_id or type_filter or status_filter %}
+    <a href="{% url 'asset_list' %}" class="btn btn-secondary btn-sm">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+<!-- TABLE -->
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Label</th>
+          <th>Asset Name</th>
+          <th>Type</th>
+          <th>Department</th>
+          <th>Status</th>
+          <th>Acquired</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for asset in assets %}
+        <tr>
+          <td><a href="{% url 'asset_detail' asset.pk %}" class="td-label" style="text-decoration:none;">{{ asset.asset_label }}</a></td>
+          <td>
+            <div class="td-name">{{ asset.asset_name }}</div>
+            {% if asset.is_overdue_maintenance %}
+            <span class="overdue-chip">⚠ Maintenance Overdue</span>
+            {% endif %}
+          </td>
+          <td class="text-muted">{{ asset.get_asset_type_display }}</td>
+          <td class="text-muted">{{ asset.department }}</td>
+          <td>
+            <span class="badge badge-{{ asset.get_status_color }}">
+              <span class="badge-dot"></span>
+              {{ asset.get_status_display }}
+            </span>
+          </td>
+          <td class="text-muted text-mono" style="font-size:12px;">{{ asset.acquisition_date }}</td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <a href="{% url 'asset_detail' asset.pk %}" class="btn btn-secondary btn-sm">View</a>
+              <a href="{% url 'asset_edit' asset.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7">
+            <div class="empty-state">
+              <div class="empty-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/>
+                  <circle cx="12" cy="12" r="1"/>
+                </svg>
+              </div>
+              <div class="empty-title">No assets found</div>
+              <div class="empty-text">{% if query or dept_id or type_filter or status_filter %}Try adjusting your filters.{% else %}Start by registering your first asset.{% endif %}</div>
+              {% if not query and not dept_id and not type_filter and not status_filter %}
+              <a href="{% url 'asset_add' %}" class="btn btn-primary">Add First Asset</a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
