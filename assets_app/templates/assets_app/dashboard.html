@@ -13,37 +13,285 @@
 
 {% block content %}
 
-<!-- STAT CARDS -->
+<!-- STAT CARDS AS TABS -->
 <div class="stats-grid">
-  <div class="stat-card primary">
+  <div class="stat-card primary tab-button active" data-tab="all">
     <div class="stat-label">Total Assets</div>
     <div class="stat-value">{{ total_assets }}</div>
     <div class="stat-note">All registered assets</div>
   </div>
-  <div class="stat-card success">
+  <div class="stat-card success tab-button" data-tab="available">
     <div class="stat-label">Available</div>
     <div class="stat-value">{{ available }}</div>
     <div class="stat-note">Ready for use</div>
   </div>
-  <div class="stat-card info">
+  <div class="stat-card info tab-button" data-tab="in_use">
     <div class="stat-label">In Use</div>
     <div class="stat-value">{{ in_use }}</div>
     <div class="stat-note">Currently checked out</div>
   </div>
-  <div class="stat-card warning">
+  <div class="stat-card warning tab-button" data-tab="maintenance">
     <div class="stat-label">Maintenance</div>
     <div class="stat-value">{{ maintenance_count }}</div>
     <div class="stat-note">Under servicing</div>
   </div>
-  <div class="stat-card danger">
+  <div class="stat-card danger tab-button" data-tab="lost">
     <div class="stat-label">Lost</div>
     <div class="stat-value">{{ lost_count }}</div>
     <div class="stat-note">Marked as lost</div>
   </div>
-  <div class="stat-card danger">
+  <div class="stat-card danger tab-button" data-tab="overdue">
     <div class="stat-label">Overdue Maintenance</div>
     <div class="stat-value">{{ overdue_maintenance }}</div>
     <div class="stat-note">Passed scheduled date</div>
+  </div>
+</div>
+
+<!-- TAB CONTENT AREAS -->
+<div class="tab-content">
+  <!-- All Assets Tab -->
+  <div id="tab-all" class="tab-pane active">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">All Assets</span>
+        <a href="{% url 'asset_list' %}" class="btn btn-secondary btn-sm">View All</a>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Department</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for asset in all_assets %}
+            <tr>
+              <td><a href="{% url 'asset_detail' asset.pk %}" class="td-label" style="text-decoration:none;">{{ asset.asset_label }}</a></td>
+              <td class="td-name">{{ asset.asset_name }}</td>
+              <td class="text-muted">{{ asset.get_asset_type_display }}</td>
+              <td class="text-muted">{{ asset.department }}</td>
+              <td>
+                <span class="badge badge-{{ asset.get_status_color }}">
+                  <span class="badge-dot"></span>
+                  {{ asset.get_status_display }}
+                </span>
+              </td>
+              <td>
+                <a href="{% url 'asset_detail' asset.pk %}" class="btn btn-secondary btn-sm">View</a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" style="text-align:center;color:var(--mist);padding:24px;">No assets found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Available Assets Tab -->
+  <div id="tab-available" class="tab-pane">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Available Assets</span>
+        <a href="{% url 'asset_list' %}?status=available" class="btn btn-secondary btn-sm">View All</a>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Department</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for asset in available_assets %}
+            <tr>
+              <td><a href="{% url 'asset_detail' asset.pk %}" class="td-label" style="text-decoration:none;">{{ asset.asset_label }}</a></td>
+              <td class="td-name">{{ asset.asset_name }}</td>
+              <td class="text-muted">{{ asset.get_asset_type_display }}</td>
+              <td class="text-muted">{{ asset.department }}</td>
+              <td>
+                <a href="{% url 'asset_detail' asset.pk %}" class="btn btn-secondary btn-sm">View</a>
+                <a href="{% url 'asset_checkout' asset.pk %}" class="btn btn-primary btn-sm">Checkout</a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" style="text-align:center;color:var(--mist);padding:24px;">No available assets.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- In Use Assets Tab -->
+  <div id="tab-in_use" class="tab-pane">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Assets In Use</span>
+        <a href="{% url 'asset_list' %}?status=in_use" class="btn btn-secondary btn-sm">View All</a>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Department</th>
+              <th>Checked Out To</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for asset in in_use_assets %}
+            <tr>
+              <td><a href="{% url 'asset_detail' asset.pk %}" class="td-label" style="text-decoration:none;">{{ asset.asset_label }}</a></td>
+              <td class="td-name">{{ asset.asset_name }}</td>
+              <td class="text-muted">{{ asset.get_asset_type_display }}</td>
+              <td class="text-muted">{{ asset.department }}</td>
+              <td class="text-muted">{% if asset.current_checkout %}{{ asset.current_checkout.checked_out_by_user.get_full_name|default:asset.current_checkout.checked_out_by_user.username|default:"Unknown User" }}{% else %}Unknown{% endif %}</td>
+              <td>
+                <a href="{% url 'asset_detail' asset.pk %}" class="btn btn-secondary btn-sm">View</a>
+                {% if asset.current_checkout %}<a href="{% url 'asset_checkin' asset.current_checkout.pk %}" class="btn btn-success btn-sm">Checkin</a>{% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" style="text-align:center;color:var(--mist);padding:24px;">No assets currently in use.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Maintenance Assets Tab -->
+  <div id="tab-maintenance" class="tab-pane">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Assets Under Maintenance</span>
+        <a href="{% url 'asset_list' %}?status=maintenance" class="btn btn-secondary btn-sm">View All</a>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Department</th>
+              <th>Next Maintenance</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for asset in maintenance_assets %}
+            <tr>
+              <td><a href="{% url 'asset_detail' asset.pk %}" class="td-label" style="text-decoration:none;">{{ asset.asset_label }}</a></td>
+              <td class="td-name">{{ asset.asset_name }}</td>
+              <td class="text-muted">{{ asset.get_asset_type_display }}</td>
+              <td class="text-muted">{{ asset.department }}</td>
+              <td class="text-muted">{{ asset.next_maintenance|default:"Not set" }}</td>
+              <td>
+                <a href="{% url 'asset_detail' asset.pk %}" class="btn btn-secondary btn-sm">View</a>
+                <a href="{% url 'maintenance_add' asset.pk %}" class="btn btn-warning btn-sm">Add Record</a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" style="text-align:center;color:var(--mist);padding:24px;">No assets under maintenance.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lost Assets Tab -->
+  <div id="tab-lost" class="tab-pane">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Lost Assets</span>
+        <a href="{% url 'asset_list' %}?status=lost" class="btn btn-secondary btn-sm">View All</a>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Department</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for asset in lost_assets %}
+            <tr>
+              <td><a href="{% url 'asset_detail' asset.pk %}" class="td-label" style="text-decoration:none;">{{ asset.asset_label }}</a></td>
+              <td class="td-name">{{ asset.asset_name }}</td>
+              <td class="text-muted">{{ asset.get_asset_type_display }}</td>
+              <td class="text-muted">{{ asset.department }}</td>
+              <td>
+                <a href="{% url 'asset_detail' asset.pk %}" class="btn btn-secondary btn-sm">View</a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" style="text-align:center;color:var(--mist);padding:24px;">No lost assets.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overdue Maintenance Tab -->
+  <div id="tab-overdue" class="tab-pane">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Assets with Overdue Maintenance</span>
+        <a href="{% url 'maintenance_list' %}" class="btn btn-secondary btn-sm">View All</a>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Department</th>
+              <th>Due Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for asset in overdue_assets %}
+            <tr>
+              <td><a href="{% url 'asset_detail' asset.pk %}" class="td-label" style="text-decoration:none;">{{ asset.asset_label }}</a></td>
+              <td class="td-name">{{ asset.asset_name }}</td>
+              <td class="text-muted">{{ asset.get_asset_type_display }}</td>
+              <td class="text-muted">{{ asset.department }}</td>
+              <td class="text-danger">{{ asset.next_maintenance }}</td>
+              <td>
+                <a href="{% url 'asset_detail' asset.pk %}" class="btn btn-secondary btn-sm">View</a>
+                <a href="{% url 'maintenance_add' asset.pk %}" class="btn btn-warning btn-sm">Schedule Maintenance</a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" style="text-align:center;color:var(--mist);padding:24px;">No assets with overdue maintenance.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -142,4 +390,76 @@
   </div>
 
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const tabButtons = document.querySelectorAll('.tab-button');
+  const tabPanes = document.querySelectorAll('.tab-pane');
+
+  tabButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      const targetTab = this.getAttribute('data-tab');
+
+      // Remove active class from all buttons and panes
+      tabButtons.forEach(btn => btn.classList.remove('active'));
+      tabPanes.forEach(pane => pane.classList.remove('active'));
+
+      // Add active class to clicked button and corresponding pane
+      this.classList.add('active');
+      const targetPane = document.getElementById('tab-' + targetTab);
+      if (targetPane) {
+        targetPane.classList.add('active');
+      }
+    });
+  });
+});
+</script>
+
+<style>
+.tab-button {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.tab-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tab-button.active {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.tab-button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--primary);
+  border-radius: 0 0 3px 3px;
+}
+
+.tab-content {
+  margin-top: 20px;
+}
+
+.tab-pane {
+  display: none;
+}
+
+.tab-pane.active {
+  display: block;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+
 {% endblock %}

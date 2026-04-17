@@ -60,6 +60,16 @@ def dashboard(request):
         next_maintenance__lt=timezone.now().date()
     ).exclude(status='decommissioned').count()
 
+    # Get filtered asset lists for each tab
+    all_assets = Asset.objects.select_related('department', 'acquired_by_user')[:10]
+    available_assets = Asset.objects.filter(status='available').select_related('department')[:10]
+    in_use_assets = Asset.objects.filter(status='in_use').select_related('department').prefetch_related('checkouts__checked_out_by_user')[:10]
+    maintenance_assets = Asset.objects.filter(status='maintenance').select_related('department')[:10]
+    lost_assets = Asset.objects.filter(status='lost').select_related('department')[:10]
+    overdue_assets = Asset.objects.filter(
+        next_maintenance__lt=timezone.now().date()
+    ).exclude(status='decommissioned').select_related('department')[:10]
+
     dept_stats = Department.objects.annotate(
         total=Count('assets'),
         in_use=Count('assets', filter=Q(assets__status='in_use')),
@@ -75,6 +85,12 @@ def dashboard(request):
         'maintenance_count':  maintenance_count,
         'lost_count':         lost_count,
         'overdue_maintenance': overdue_maintenance,
+        'all_assets':         all_assets,
+        'available_assets':   available_assets,
+        'in_use_assets':      in_use_assets,
+        'maintenance_assets': maintenance_assets,
+        'lost_assets':        lost_assets,
+        'overdue_assets':     overdue_assets,
         'dept_stats':         dept_stats,
         'recent_logs':        recent_logs,
         'recent_assets':      recent_assets,

@@ -90,6 +90,10 @@ class Asset(models.Model):
         return f"{self.asset_label} — {self.asset_name}"
 
     @property
+    def current_checkout(self):
+        return self.checkouts.filter(returned_at__isnull=True).first()
+
+    @property
     def is_overdue_maintenance(self):
         if self.next_maintenance:
             return self.next_maintenance < timezone.now().date()
