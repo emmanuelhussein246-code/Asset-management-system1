@@ -1,0 +1,28 @@
+Asset Return Confirmation
+
+Swahilipot Hub Asset Management System
+
+Hello {{ checkout.checked_out_by_name }},
+
+Thank you for returning the asset. The return has been successfully processed:
+
+ASSET DETAILS:
+==============
+Asset Label: {{ checkout.asset.asset_label }}
+Asset Name: {{ checkout.asset.asset_name }}
+Asset Type: {{ checkout.asset.get_asset_type_display }}
+Department: {{ checkout.asset.department }}
+Status: RETURNED
+Original Checkout Date: {{ checkout.checked_out_at|date:"F j, Y" }} at {{ checkout.checked_out_at|time:"g:i A" }}
+Return Date: {{ checkout.returned_at|date:"F j, Y" }} at {{ checkout.returned_at|time:"g:i A" }}
+{% if checkout.expected_return %}
+Expected Return Date: {{ checkout.expected_return }}
+{% endif %}
+
+The asset is now marked as available and can be checked out by others. 
+Thank you for taking good care of the asset and returning it on time.
+
+This is an automated message from the Swahilipot Hub Asset Management System.
+If you did not return this asset, please contact your administrator immediately.
+
+© 2026 Swahilipot Hub. All rights reserved.

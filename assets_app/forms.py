@@ -31,11 +31,12 @@ class AssetForm(forms.ModelForm):
 class CheckoutForm(forms.ModelForm):
     class Meta:
         model = AssetCheckout
-        fields = ['checked_out_by_name', 'checked_out_by_user', 'purpose', 'expected_return']
+        fields = ['checked_out_by_name', 'checked_out_by_user', 'email', 'purpose', 'expected_return']
         widgets = {
             'checked_out_by_name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Full name'}),
             'checked_out_by_user': forms.Select(attrs={'class': 'form-input'}),
-            'purpose':             forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Reason for taking the asset'}),
+            'email':              forms.EmailInput(attrs={'class': 'form-input', 'placeholder': 'Email for notifications (optional)'}),
+            'purpose':             forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Reason for taking asset'}),
             'expected_return':     forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
         }
 
