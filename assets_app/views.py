@@ -7,6 +7,8 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Count, Q
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
 
 from .decorators import admin_required
 from .models import Asset, AssetCheckout, MaintenanceRecord, AuditLog, Department, AssetType, StaffProfile
@@ -317,6 +319,7 @@ def asset_checkout(request, pk):
         checkout = form.save(commit=False)
         checkout.asset     = asset
         checkout.logged_by = request.user
+ main
         if checkout.quantity > available_qty:
             form.add_error('quantity', f'Only {available_qty} unit(s) are available for this asset.')
         else:
@@ -325,6 +328,50 @@ def asset_checkout(request, pk):
             asset.save()
             messages.success(request, f'{asset.asset_label} checked out to {checkout.checked_out_by_name}.')
             return redirect('asset_detail', pk=pk)
+
+        checkout.save()
+        
+        # Send email notification
+        try:
+            recipient_email = None
+            recipient_name = checkout.checked_out_by_name
+            
+            # Get email from user account or manual entry
+            if checkout.checked_out_by_user and checkout.checked_out_by_user.email:
+                recipient_email = checkout.checked_out_by_user.email
+            elif checkout.email:
+                recipient_email = checkout.email
+            
+            # Send email if we have a valid email address
+            if recipient_email:
+                # Prepare email context
+                context = {
+                    'checkout': checkout,
+                    'asset': asset,
+                }
+                
+                # Render email templates
+                html_message = render_to_string('assets_app/emails/asset_assigned_email.html', context)
+                text_message = render_to_string('assets_app/emails/asset_assigned_email.txt', context)
+                
+                # Send email
+                send_mail(
+                    subject=f'Asset Assigned: {asset.asset_label}',
+                    message=text_message,
+                    from_email=None,  # Will use DEFAULT_FROM_EMAIL in production
+                    recipient_list=[recipient_email],
+                    html_message=html_message,
+                    fail_silently=True
+                )
+                
+                messages.success(request, f'{asset.asset_label} checked out to {checkout.checked_out_by_name}. Email notification sent to {recipient_email}.')
+            else:
+                messages.success(request, f'{asset.asset_label} checked out to {checkout.checked_out_by_name}. No email notification sent - no email provided.')
+        except Exception as e:
+            messages.warning(request, f'Asset checked out but email notification failed: {str(e)}')
+        
+        return redirect('asset_detail', pk=pk)
+ main
 
     return render(request, 'assets_app/checkout_form.html', {
         'form': form,
@@ -342,11 +389,54 @@ def asset_checkin(request, checkout_pk):
         checkout.returned_at = timezone.now()
         checkout.logged_by   = request.user
         checkout.save()
+ main
         # Clear current_holder if no active checkouts
         if asset.checkouts.filter(returned_at__isnull=True).count() == 0:
             asset.current_holder = ''
             asset.save()
         messages.success(request, f'{asset.asset_label} has been returned and marked available.')
+
+        
+        # Send email notification for asset return
+        try:
+            recipient_email = None
+            recipient_name = checkout.checked_out_by_name
+            
+            # Get email from user account or manual entry
+            if checkout.checked_out_by_user and checkout.checked_out_by_user.email:
+                recipient_email = checkout.checked_out_by_user.email
+            elif checkout.email:
+                recipient_email = checkout.email
+            
+            # Send email if we have a valid email address
+            if recipient_email:
+                # Prepare email context
+                context = {
+                    'checkout': checkout,
+                    'asset': asset,
+                }
+                
+                # Render email templates
+                html_message = render_to_string('assets_app/emails/asset_returned_email.html', context)
+                text_message = render_to_string('assets_app/emails/asset_returned_email.txt', context)
+                
+                # Send email
+                send_mail(
+                    subject=f'Asset Returned: {asset.asset_label}',
+                    message=text_message,
+                    from_email=None,  # Will use DEFAULT_FROM_EMAIL in production
+                    recipient_list=[recipient_email],
+                    html_message=html_message,
+                    fail_silently=True
+                )
+                
+                messages.success(request, f'{asset.asset_label} has been returned and marked available. Email notification sent to {recipient_email}.')
+            else:
+                messages.success(request, f'{asset.asset_label} has been returned and marked available. No email notification sent - no email provided.')
+        except Exception as e:
+            messages.warning(request, f'Asset returned but email notification failed: {str(e)}')
+        
+main
         return redirect('asset_detail', pk=asset.pk)
 
     return render(request, 'assets_app/checkin_confirm.html', {'checkout': checkout, 'asset': asset})

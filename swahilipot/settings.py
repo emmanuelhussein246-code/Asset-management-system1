@@ -88,6 +88,17 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Email configuration
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For development - sends to console
+# For production, use:
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'emmaculaten136@gmail.com'  # User's Gmail
+EMAIL_HOST_PASSWORD = 'stbg yfxa tsjs vdwg'     # User's Gmail app password
+DEFAULT_FROM_EMAIL = 'emmaculaten136@gmail.com'     # User's Gmail
+
 # Auth redirects — login required for everything
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'

@@ -146,12 +146,16 @@ class AssetCheckout(models.Model):
     checked_out_by_name  = models.CharField(max_length=200)
     checked_out_by_user  = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
                                               related_name='checkouts')
+ main
     recipient_phone      = models.CharField(max_length=20, blank=True)
     recipient_email      = models.EmailField(blank=True)
     recipient_kenyan_id  = models.CharField(max_length=20, blank=True)
     department           = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True,
                                              related_name='asset_checkouts')
     quantity             = models.PositiveIntegerField(default=1)
+
+    email                = models.EmailField(max_length=254, blank=True, help_text="Email address for notifications")
+ main
     purpose              = models.CharField(max_length=300, blank=True)
     checked_out_at       = models.DateTimeField(default=timezone.now)
     expected_return      = models.DateField(null=True, blank=True)

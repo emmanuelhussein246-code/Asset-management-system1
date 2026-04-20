@@ -46,17 +46,26 @@ class AssetForm(forms.ModelForm):
 class CheckoutForm(forms.ModelForm):
     class Meta:
         model = AssetCheckout
+ main
         fields = [
             'checked_out_by_name', 'checked_out_by_user', 'department',
             'quantity', 'purpose', 'expected_return',
             'recipient_phone', 'recipient_email', 'recipient_kenyan_id',
         ]
+
+        fields = ['checked_out_by_name', 'checked_out_by_user', 'email', 'purpose', 'expected_return']
+ main
         widgets = {
             'checked_out_by_name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Full name of person receiving asset'}),
             'checked_out_by_user': forms.Select(attrs={'class': 'form-input'}),
+ main
             'department':          forms.Select(attrs={'class': 'form-input'}),
             'quantity':            forms.NumberInput(attrs={'class': 'form-input', 'placeholder': 'Number of units', 'min': 1}),
             'purpose':             forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Reason for taking the asset'}),
+
+            'email':              forms.EmailInput(attrs={'class': 'form-input', 'placeholder': 'Email for notifications (optional)'}),
+            'purpose':             forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Reason for taking asset'}),
+ main
             'expected_return':     forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
             'recipient_phone':     forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Recipient phone number'}),
             'recipient_email':     forms.EmailInput(attrs={'class': 'form-input', 'placeholder': 'Recipient email address'}),
