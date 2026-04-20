@@ -53,12 +53,16 @@
           <div class="detail-val">{{ asset.asset_name }}</div>
         </div>
         <div class="detail-row">
-          <div class="detail-key">Type</div>
-          <div class="detail-val">{{ asset.get_asset_type_display }}</div>
-        </div>
-        <div class="detail-row">
           <div class="detail-key">Department</div>
           <div class="detail-val">{{ asset.department }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-key">Quantity</div>
+          <div class="detail-val">{{ asset.quantity }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-key">Available</div>
+          <div class="detail-val">{{ asset.available_quantity }}</div>
         </div>
         <div class="detail-row">
           <div class="detail-key">Description</div>
@@ -70,10 +74,6 @@
           <div class="detail-val text-mono">{{ asset.serial_number }}</div>
         </div>
         {% endif %}
-        <div class="detail-row">
-          <div class="detail-key">Acquired By</div>
-          <div class="detail-val">{{ asset.acquired_by_name }}</div>
-        </div>
         <div class="detail-row">
           <div class="detail-key">Acquisition Date</div>
           <div class="detail-val text-mono">{{ asset.acquisition_date }}</div>
@@ -174,9 +174,13 @@
           <div style="font-size:12px;color:var(--mist);font-family:var(--font-mono);">
             Scheduled: {{ rec.scheduled_date }}
             {% if rec.assigned_to %} · {{ rec.assigned_to.get_full_name }}{% endif %}
-          </div>
-          {% if rec.details %}<div style="font-size:12.5px;color:var(--slate);margin-top:4px;">{{ rec.details }}</div>{% endif %}
+            {% if rec.reported_by %}<br>Reported by: {{ rec.reported_by }}{% endif %}
         </div>
+        {% if rec.broken_items %}<div style="font-size:12.5px;color:var(--slate);margin-top:4px;"><strong>Broken / Damaged:</strong> {{ rec.broken_items }}</div>{% endif %}
+        {% if rec.issue_details %}<div style="font-size:12.5px;color:var(--slate);margin-top:4px;"><strong>Details:</strong> {{ rec.issue_details }}</div>{% endif %}
+      {% if rec.broken_items %}<div style="font-size:12.5px;color:var(--slate);margin-top:4px;"><strong>Broken / Damaged:</strong> {{ rec.broken_items }}</div>{% endif %}
+        {% if rec.issue_details %}<div style="font-size:12.5px;color:var(--slate);margin-top:4px;"><strong>Details:</strong> {{ rec.issue_details }}</div>{% endif %}
+      </div>
         {% empty %}
         <div class="empty-state" style="padding:32px 0;">
           <div class="empty-title" style="font-size:14px;">No maintenance records</div>

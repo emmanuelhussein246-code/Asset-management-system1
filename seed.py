@@ -8,7 +8,7 @@ Usage:
 
 from django.contrib.auth.models import User
 from datetime import date
-from assets_app.models import Asset, Department, StaffProfile
+from assets_app.models import Asset, Department, StaffProfile, AssetType
 
 
 # ── STEP 1 — DEPARTMENTS ──────────────────────────────────
@@ -33,10 +33,40 @@ for name, desc in departments:
 print()
 
 
-# ── STEP 2 — SUPERADMIN ───────────────────────────────────
+# ── STEP 2 — ASSET TYPES ──────────────────────────────────
 
 print("=" * 50)
-print("STEP 2 — Creating superadmin account...")
+print("STEP 2 — Creating asset types...")
+print("=" * 50)
+
+asset_types = [
+    ("Electronics", "Computers, printers, monitors, keyboards, mice, cables, and other IT equipment."),
+    ("Furniture", "Desks, chairs, tables, shelves, cabinets, and office furniture."),
+    ("Equipment", "Machinery, tools, cameras, projectors, and specialized equipment."),
+    ("Vehicles", "Cars, motorcycles, bicycles, and transportation assets."),
+    ("Stationery & Supplies", "Paper, pens, notebooks, ink cartridges, and office supplies."),
+    ("Facility", "Building infrastructure, HVAC systems, electrical panels, and facility infrastructure."),
+    ("Software & Licenses", "Software licenses, subscriptions, and digital tools."),
+    ("Audio/Visual", "Speakers, microphones, projectors, screens, and recording equipment."),
+    ("Networking", "Routers, switches, cables, WiFi equipment, and network infrastructure."),
+    ("Office Equipment", "Photocopiers, scanners, shredders, and office machines."),
+    ("Security", "Cameras, alarms, locks, and security systems."),
+    ("Appliances", "Refrigerators, microwaves, water dispensers, and kitchen appliances."),
+    ("Books & Media", "Books, manuals, DVDs, and physical media."),
+    ("Other", "Miscellaneous items that don't fit other categories."),
+]
+
+for name, desc in asset_types:
+    asset_type, created = AssetType.objects.get_or_create(name=name, defaults={"description": desc})
+    print(f"  {'Created' if created else 'Already exists'}: {name}")
+
+print()
+
+
+# ── STEP 3 — SUPERADMIN ───────────────────────────────────
+
+print("=" * 50)
+print("STEP 3 — Creating superadmin account...")
 print("=" * 50)
 
 if not User.objects.filter(username="admin").exists():
@@ -63,10 +93,10 @@ else:
 print()
 
 
-# ── STEP 3 — SAMPLE ASSETS ────────────────────────────────
+# ── STEP 4 — SAMPLE ASSETS ────────────────────────────────
 
 print("=" * 50)
-print("STEP 3 — Adding sample assets...")
+print("STEP 4 — Adding sample assets...")
 print("=" * 50)
 
 def dept(name):

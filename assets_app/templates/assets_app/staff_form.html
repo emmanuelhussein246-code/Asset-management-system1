@@ -56,6 +56,15 @@
           <label>Department</label>
           {{ form.department }}
         </div>
+        <div class="form-group">
+          <label>Kenyan ID — optional</label>
+          {{ form.kenyan_id }}
+        </div>
+        <div class="form-group">
+          <label>Approved</label>
+          {{ form.is_approved }}
+          <div class="form-hint">Check to approve this user for login access</div>
+        </div>
       </div>
 
       <div class="form-actions">

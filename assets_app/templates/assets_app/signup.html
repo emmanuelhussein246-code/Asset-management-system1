@@ -1,0 +1,150 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign Up — Swahilipot Hub Asset System</title>
+  <link rel="stylesheet" href="{% static 'css/main.css' %}"/>
+</head>
+<body class="theme-dark">
+<div class="login-page">
+
+  <!-- LEFT PANEL -->
+  <div class="login-left">
+    <div class="login-brand">
+      <div class="login-brand-logo">
+        <img src="{% static 'images/sph-logo.png' %}" alt="Swahilipot Hub Logo" style="width:50px; height:50px;"/>
+      </div>
+      <div>
+        <div class="login-brand-name">Swahilipot Hub</div>
+        <div class="login-brand-sub" style="font-size:11px;color:rgba(255,255,255,0.35);">Mombasa, Kenya</div>
+      </div>
+    </div>
+
+    <div class="login-hero">
+      <div class="login-tagline">
+        Join the Team.<br/>
+        Manage Assets.<br/>
+        <span>Excel.</span>
+      </div>
+      <p class="login-desc">
+        Create your account to access the Swahilipot Hub asset management platform.
+      </p>
+      <div class="login-feat">
+        <div class="login-feat-item"><div class="login-feat-dot"></div>Track and manage all hub assets</div>
+        <div class="login-feat-item"><div class="login-feat-dot"></div>Collaborate with your team</div>
+        <div class="login-feat-item"><div class="login-feat-dot"></div>Maintain accountability and transparency</div>
+      </div>
+    </div>
+
+    <div class="login-footer-text">Phase 1 — Administration Department</div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="login-right">
+    <div class="login-form-box">
+      <div class="login-form-title">Create Account</div>
+      <div class="login-form-sub">Fill in your details to sign up.</div>
+
+      {% if messages %}
+        {% for msg in messages %}
+        <div class="login-alert">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="login-form-group">
+          <label for="{{ form.first_name.id_for_label }}">First Name</label>
+          {{ form.first_name }}
+          {% if form.first_name.errors %}
+            <div class="form-error">{{ form.first_name.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="login-form-group">
+          <label for="{{ form.last_name.id_for_label }}">Last Name</label>
+          {{ form.last_name }}
+          {% if form.last_name.errors %}
+            <div class="form-error">{{ form.last_name.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="login-form-group">
+          <label for="{{ form.username.id_for_label }}">Choose Username</label>
+          {{ form.username }}
+          {% if form.username.errors %}
+            <div class="form-error">{{ form.username.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="login-form-group">
+          <label for="{{ form.email.id_for_label }}">Email Address</label>
+          {{ form.email }}
+          {% if form.email.errors %}
+            <div class="form-error">{{ form.email.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="login-form-group">
+          <label for="{{ form.role.id_for_label }}">Role</label>
+          {{ form.role }}
+          {% if form.role.errors %}
+            <div class="form-error">{{ form.role.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="login-form-group">
+          <label for="{{ form.phone.id_for_label }}">Phone Number</label>
+          {{ form.phone }}
+          {% if form.phone.errors %}
+            <div class="form-error">{{ form.phone.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="login-form-group">
+          <label for="{{ form.kenyan_id.id_for_label }}">Kenyan ID</label>
+          {{ form.kenyan_id }}
+          {% if form.kenyan_id.errors %}
+            <div class="form-error">{{ form.kenyan_id.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="login-form-group">
+          <label for="{{ form.password.id_for_label }}">Password</label>
+          {{ form.password }}
+          {% if form.password.errors %}
+            <div class="form-error">{{ form.password.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="login-form-group">
+          <label for="{{ form.confirm_password.id_for_label }}">Confirm Password</label>
+          {{ form.confirm_password }}
+          {% if form.confirm_password.errors %}
+            <div class="form-error">{{ form.confirm_password.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        {% if form.non_field_errors %}
+          <div class="form-error">{{ form.non_field_errors.0 }}</div>
+        {% endif %}
+
+        <button type="submit" class="login-submit">Sign Up →</button>
+      </form>
+
+      <p style="margin-top:16px;text-align:center;">
+        Already have an account? <a href="{% url 'login' %}" style="color:var(--primary); text-decoration:underline;">Sign In</a>
+      </p>
+
+      <p style="margin-top:24px;font-size:12px;color:var(--mist);text-align:center;">
+        Maximum 7 users allowed.
+      </p>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
