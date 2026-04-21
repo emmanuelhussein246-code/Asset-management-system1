@@ -1,0 +1,307 @@
+{% extends 'assets_app/base.html' %}
+
+{% block title %}Asset Distribution — Swahilipot Hub Asset System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1 class="page-heading">Asset Distribution</h1>
+    <p class="page-sub">Track all assets given to staff and departments</p>
+  </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+  <form method="get" style="width: 100%; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+    
+    <div style="flex: 1; min-width: 200px;">
+      <select name="status" class="filter-select" onchange="this.form.submit()">
+        <option value="">All Status</option>
+        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active (Not Returned)</option>
+        <option value="returned" {% if status_filter == 'returned' %}selected{% endif %}>Returned</option>
+      </select>
+    </div>
+
+    <div style="flex: 1; min-width: 200px;">
+      <select name="department" class="filter-select" onchange="this.form.submit()">
+        <option value="">All Departments</option>
+        {% for dept in departments %}
+          <option value="{{ dept.id }}" {% if dept.id|stringformat:'s' == dept_filter %}selected{% endif %}>{{ dept.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    {% if status_filter or dept_filter %}
+      <a href="{% url 'checkout_list' %}" class="btn btn-secondary btn-sm">Clear Filters</a>
+    {% endif %}
+  </form>
+</div>
+
+<!-- Checkouts Table -->
+<div class="card">
+  <div class="card-body">
+    {% if active_checkouts or returned_checkouts %}
+      
+      <!-- Equipment Being Given Out (Active Checkouts) -->
+      {% if active_checkouts %}
+      <div style="margin-bottom: 32px;">
+        <h3 style="color: var(--primary); margin-bottom: 16px; font-size: 18px;">📤 Equipment Being Given Out</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Asset Name</th>
+                <th>Asset Type</th>
+                <th>Asset Label</th>
+                <th>Person Receiving</th>
+                <th>Department</th>
+                <th>Quantity</th>
+                <th>Date Issued</th>
+                <th>Expected Return</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for checkout in active_checkouts %}
+                <tr>
+                  <!-- Asset Name -->
+                  <td>
+                    <a href="{% url 'asset_detail' pk=checkout.asset.pk %}" style="color: var(--primary); text-decoration: none; font-weight: 600;">
+                      {{ checkout.asset.asset_name }}
+                    </a>
+                  </td>
+                  
+                  <!-- Asset Type -->
+                  <td>
+                    <span class="badge badge-info">
+                      {{ checkout.asset.get_asset_type_display }}
+                    </span>
+                  </td>
+                  
+                  <!-- Asset Label -->
+                  <td>
+                    <span style="font-family: monospace; font-weight: 600; color: var(--text-muted);">
+                      {{ checkout.asset.asset_label }}
+                    </span>
+                  </td>
+                  
+                  <!-- Person Receiving -->
+                  <td style="font-weight: 600;">
+                    {{ checkout.checked_out_by_name }}
+                    {% if checkout.checked_out_by_user %}
+                      <br><small style="color: var(--text-muted);">({{ checkout.checked_out_by_user.email }})</small>
+                    {% endif %}
+                  </td>
+                  
+                  <!-- Department -->
+                  <td>
+                    {% if checkout.department %}
+                      <span style="display: inline-block; background: var(--primary); color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px;">
+                        {{ checkout.department.name }}
+                      </span>
+                    {% else %}
+                      <span style="color: var(--text-muted);">—</span>
+                    {% endif %}
+                  </td>
+                  
+                  <!-- Quantity -->
+                  <td style="font-weight: 700; color: var(--primary); text-align: center;">
+                    {{ checkout.quantity }}
+                  </td>
+                  
+                  <!-- Date Issued -->
+                  <td style="font-size: 12px;">
+                    <span title="{{ checkout.checked_out_at }}">
+                      {{ checkout.checked_out_at|date:"M d, Y" }}<br>
+                      <small style="color: var(--text-muted);">{{ checkout.checked_out_at|date:"H:i" }}</small>
+                    </span>
+                  </td>
+                  
+                  <!-- Expected Return -->
+                  <td style="font-size: 12px;">
+                    {% if checkout.expected_return %}
+                      <span {% if checkout.is_overdue %}style="color: #ef4444; font-weight: 700;"{% endif %}>
+                        {{ checkout.expected_return|date:"M d, Y" }}
+                        {% if checkout.is_overdue %}<br><small>(OVERDUE)</small>{% endif %}
+                      </span>
+                    {% else %}
+                      <span style="color: var(--text-muted);">—</span>
+                    {% endif %}
+                  </td>
+                  
+                  <!-- Status -->
+                  <td>
+                    <span class="badge badge-warning">
+                      Active
+                    </span>
+                  </td>
+                  
+                  <!-- Action -->
+                  <td style="text-align: center;">
+                    <a href="{% url 'asset_checkin' checkout_pk=checkout.pk %}" class="btn btn-sm btn-primary" title="Return this asset">
+                      Check In
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+      
+      <!-- Equipment Being Received Back (Returned Checkouts) -->
+      {% if returned_checkouts %}
+      <div>
+        <h3 style="color: var(--success); margin-bottom: 16px; font-size: 18px;">📥 Equipment Being Received Back</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Asset Name</th>
+                <th>Asset Type</th>
+                <th>Asset Label</th>
+                <th>Person Returning</th>
+                <th>Department</th>
+                <th>Quantity</th>
+                <th>Date Issued</th>
+                <th>Date Returned</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for checkout in returned_checkouts %}
+                <tr>
+                  <!-- Asset Name -->
+                  <td>
+                    <a href="{% url 'asset_detail' pk=checkout.asset.pk %}" style="color: var(--primary); text-decoration: none; font-weight: 600;">
+                      {{ checkout.asset.asset_name }}
+                    </a>
+                  </td>
+                  
+                  <!-- Asset Type -->
+                  <td>
+                    <span class="badge badge-info">
+                      {{ checkout.asset.get_asset_type_display }}
+                    </span>
+                  </td>
+                  
+                  <!-- Asset Label -->
+                  <td>
+                    <span style="font-family: monospace; font-weight: 600; color: var(--text-muted);">
+                      {{ checkout.asset.asset_label }}
+                    </span>
+                  </td>
+                  
+                  <!-- Person Returning -->
+                  <td style="font-weight: 600;">
+                    {{ checkout.checked_out_by_name }}
+                    {% if checkout.checked_out_by_user %}
+                      <br><small style="color: var(--text-muted);">({{ checkout.checked_out_by_user.email }})</small>
+                    {% endif %}
+                  </td>
+                  
+                  <!-- Department -->
+                  <td>
+                    {% if checkout.department %}
+                      <span style="display: inline-block; background: var(--primary); color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px;">
+                        {{ checkout.department.name }}
+                      </span>
+                    {% else %}
+                      <span style="color: var(--text-muted);">—</span>
+                    {% endif %}
+                  </td>
+                  
+                  <!-- Quantity -->
+                  <td style="font-weight: 700; color: var(--primary); text-align: center;">
+                    {{ checkout.quantity }}
+                  </td>
+                  
+                  <!-- Date Issued -->
+                  <td style="font-size: 12px;">
+                    <span title="{{ checkout.checked_out_at }}">
+                      {{ checkout.checked_out_at|date:"M d, Y" }}<br>
+                      <small style="color: var(--text-muted);">{{ checkout.checked_out_at|date:"H:i" }}</small>
+                    </span>
+                  </td>
+                  
+                  <!-- Date Returned -->
+                  <td style="font-size: 12px;">
+                    <span title="{{ checkout.returned_at }}">
+                      {{ checkout.returned_at|date:"M d, Y" }}<br>
+                      <small style="color: var(--text-muted);">{{ checkout.returned_at|date:"H:i" }}</small>
+                    </span>
+                  </td>
+                  
+                  <!-- Status -->
+                  <td>
+                    <span class="badge badge-success">
+                      Returned
+                    </span>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Summary Stats -->
+      <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border); display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
+        <div style="text-align: center;">
+          <div style="font-size: 24px; font-weight: 700; color: var(--primary);">
+            {{ checkouts|length }}
+          </div>
+          <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em;">
+            Total Distributions
+          </div>
+        </div>
+        <div style="text-align: center;">
+          <div style="font-size: 24px; font-weight: 700; color: #f59e0b;">
+            {{ active_checkouts_count }}
+          </div>
+          <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em;">
+            Active Checkouts
+          </div>
+        </div>
+        <div style="text-align: center;">
+          <div style="font-size: 24px; font-weight: 700; color: var(--success);">
+            {{ returned_checkouts|length }}
+          </div>
+          <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em;">
+            Returned Items
+          </div>
+        </div>
+      </div>
+
+    {% else %}
+      <div class="empty-state">
+        <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+          <p style="font-size: 16px; margin-bottom: 16px;">No asset distributions found</p>
+          <p style="font-size: 14px;">Assets will appear here when they are checked out to staff or departments.</p>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    white-space: nowrap;
+  }
+
+  .badge-info { background: rgba(59,130,246,0.12); color: #3b82f6; }
+  .badge-success { background: rgba(34,197,94,0.12); color: #22c55e; }
+  .badge-warning { background: rgba(245,158,11,0.12); color: #f59e0b; }
+</style>
+{% endblock %}

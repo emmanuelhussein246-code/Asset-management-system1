@@ -1,0 +1,56 @@
+{% extends 'assets_app/base.html' %}
+
+{% block title %}Departments — Swahilipot Hub Asset System{% endblock %}
+{% block breadcrumb %}SPH / ADMIN / DEPARTMENTS{% endblock %}
+{% block topbar_title %}Department Management{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'department_add' %}" class="btn btn-primary btn-sm">+ Add Department</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1 class="page-heading">Departments</h1>
+    <p class="page-sub">Manage all departments in the system</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    {% if departments %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Description</th>
+              <th>Created</th>
+              <th style="width: 150px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for department in departments %}
+              <tr>
+                <td style="font-weight: 600;">{{ department.name }}</td>
+                <td style="color: var(--text-muted);">{{ department.description|default:"—" }}</td>
+                <td style="font-size: 12px; color: var(--text-muted);">{{ department.created_at|date:"M d, Y" }}</td>
+                <td style="text-align: center;">
+                  <a href="{% url 'department_edit' department.pk %}" class="btn btn-sm btn-secondary" title="Edit">Edit</a>
+                  <a href="{% url 'department_delete' department.pk %}" class="btn btn-sm btn-danger" title="Delete">Delete</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+        <p style="font-size: 16px; margin-bottom: 16px;">No departments found</p>
+        <a href="{% url 'department_add' %}" class="btn btn-primary">Create the first one</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

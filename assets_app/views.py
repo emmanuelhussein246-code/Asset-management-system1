@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.utils import timezone
@@ -8,8 +11,8 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 
 from .decorators import admin_required
-from .models import Asset, AssetCheckout, MaintenanceRecord, AuditLog, Department, StaffProfile
-from .forms import AssetForm, CheckoutForm, CheckinForm, MaintenanceForm, StaffProfileForm
+from .models import Asset, AssetCheckout, MaintenanceRecord, AuditLog, Department, AssetType, StaffProfile
+from .forms import AssetForm, CheckoutForm, CheckinForm, MaintenanceForm, StaffProfileForm, SignupForm, ProfileForm, AssetTypeForm, DepartmentForm
 
 
 # ──────────────────────────────────────────────
@@ -18,10 +21,9 @@ from .forms import AssetForm, CheckoutForm, CheckinForm, MaintenanceForm, StaffP
 
 def login_view(request):
     """
-    Custom login — only is_staff or is_superuser users are allowed in.
-    Regular User accounts are rejected even if credentials are correct.
+    Custom login — only approved staff users are allowed in.
     """
-    if request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser):
+    if request.user.is_authenticated and hasattr(request.user, 'profile') and request.user.profile.is_approved:
         return redirect('dashboard')
 
     if request.method == 'POST':
@@ -30,11 +32,11 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
 
         if user is not None:
-            if user.is_staff or user.is_superuser:
+            if user.is_superuser or (hasattr(user, 'profile') and user.profile.is_approved):
                 login(request, user)
                 return redirect(request.GET.get('next', 'dashboard'))
             else:
-                messages.error(request, 'Your account does not have admin access.')
+                messages.error(request, 'Your account is not approved yet.')
         else:
             messages.error(request, 'Invalid username or password.')
 
@@ -45,6 +47,82 @@ def logout_view(request):
     logout(request)
     messages.success(request, 'You have been logged out successfully.')
     return redirect('login')
+
+
+def signup_view(request):
+    """
+    Signup view — limited to 7 approved users max.
+    """
+    if StaffProfile.objects.filter(is_approved=True).count() >= 7:
+        messages.error(request, 'Maximum number of approved users reached. Cannot create new accounts.')
+        return redirect('login')
+
+    if request.method == 'POST':
+        form = SignupForm(request.POST)
+        if form.is_valid():
+            first_name = form.cleaned_data['first_name']
+            last_name = form.cleaned_data['last_name']
+            username = form.cleaned_data['username'].strip()
+            email = form.cleaned_data['email']
+            phone = form.cleaned_data['phone']
+            kenyan_id = form.cleaned_data['kenyan_id']
+            role = form.cleaned_data['role']
+            password = form.cleaned_data['password']
+
+            if User.objects.filter(username=username).exists():
+                messages.error(request, 'Username already exists. Please choose another.')
+                return redirect('signup')
+
+            user = User.objects.create_user(
+                username=username,
+                first_name=first_name,
+                last_name=last_name,
+                email=email,
+                password=password,
+                is_staff=True  # allow login access
+            )
+
+            StaffProfile.objects.create(
+                user=user,
+                role=role,
+                phone=phone,
+                kenyan_id=kenyan_id,
+                is_approved=False  # pending approval
+            )
+
+            messages.success(request, f'Account created successfully. Pending approval by admin.')
+            return redirect('login')
+    else:
+        form = SignupForm()
+
+    return render(request, 'assets_app/signup.html', {'form': form})
+
+
+@login_required
+def profile_view(request):
+    profile = get_object_or_404(StaffProfile, user=request.user)
+    if request.method == 'POST':
+        form = ProfileForm(request.POST, instance=profile, user=request.user)
+        if form.is_valid():
+            user = request.user
+            user.username = form.cleaned_data['username']
+            user.first_name = form.cleaned_data['first_name']
+            user.last_name = form.cleaned_data['last_name']
+            user.email = form.cleaned_data['email']
+            if form.cleaned_data.get('password'):
+                user.set_password(form.cleaned_data['password'])
+            user.save()
+
+            profile = form.save(commit=False)
+            profile.user = user
+            profile.save()
+
+            messages.success(request, 'Your profile has been updated successfully.')
+            return redirect('profile')
+    else:
+        form = ProfileForm(instance=profile, user=request.user)
+
+    return render(request, 'assets_app/profile.html', {'form': form})
 
 
 # ──────────────────────────────────────────────
@@ -145,6 +223,18 @@ def asset_add(request):
     form = AssetForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         asset = form.save(commit=False)
+        
+        # Handle new department creation
+        new_department_name = form.cleaned_data.get('new_department')
+        if new_department_name:
+            department, created = Department.objects.get_or_create(name=new_department_name.strip())
+            asset.department = department
+        
+        # Auto-set fields
+        asset.acquisition_date = timezone.now()
+        asset.status = 'available'
+        asset.acquired_by_name = request.user.get_full_name()
+        asset.acquired_by_user = request.user
         asset.registered_by = request.user
         asset.save()
         messages.success(request, f'Asset {asset.asset_label} registered successfully.')
@@ -172,8 +262,25 @@ def asset_detail(request, pk):
 def asset_edit(request, pk):
     asset = get_object_or_404(Asset, pk=pk)
     form  = AssetForm(request.POST or None, instance=asset)
+
+    profile = getattr(request.user, 'profile', None)
+    # The 1-day lock applies to everyone except superadmins and HR
+    can_edit_after_day = request.user.is_superuser or (profile and profile.role in ['superadmin', 'hr'])
+    
     if request.method == 'POST' and form.is_valid():
-        form.save()
+        if asset.created_at + timedelta(days=1) < timezone.now() and not can_edit_after_day:
+            messages.error(request, 'This asset can only be edited within one day of registration.')
+            return redirect('asset_detail', pk=asset.pk)
+
+        asset = form.save(commit=False)
+        
+        # Handle new department creation
+        new_department_name = form.cleaned_data.get('new_department')
+        if new_department_name:
+            department, created = Department.objects.get_or_create(name=new_department_name.strip())
+            asset.department = department
+        
+        asset.save()
         messages.success(request, f'Asset {asset.asset_label} updated.')
         return redirect('asset_detail', pk=asset.pk)
     return render(request, 'assets_app/asset_form.html', {'form': form, 'title': f'Edit {asset.asset_label}', 'asset': asset})
@@ -198,8 +305,13 @@ def asset_delete(request, pk):
 def asset_checkout(request, pk):
     asset = get_object_or_404(Asset, pk=pk)
 
-    if asset.status == 'in_use':
-        messages.warning(request, f'{asset.asset_label} is already checked out.')
+    if asset.status not in ['available', 'in_use']:
+        messages.warning(request, f'{asset.asset_label} is not available for checkout.')
+        return redirect('asset_detail', pk=pk)
+
+    available_qty = asset.available_quantity
+    if available_qty == 0:
+        messages.warning(request, f'No available units left for {asset.asset_label}.')
         return redirect('asset_detail', pk=pk)
 
     form = CheckoutForm(request.POST or None)
@@ -207,6 +319,16 @@ def asset_checkout(request, pk):
         checkout = form.save(commit=False)
         checkout.asset     = asset
         checkout.logged_by = request.user
+ main
+        if checkout.quantity > available_qty:
+            form.add_error('quantity', f'Only {available_qty} unit(s) are available for this asset.')
+        else:
+            checkout.save()
+            asset.current_holder = checkout.checked_out_by_name
+            asset.save()
+            messages.success(request, f'{asset.asset_label} checked out to {checkout.checked_out_by_name}.')
+            return redirect('asset_detail', pk=pk)
+
         checkout.save()
         
         # Send email notification
@@ -249,8 +371,13 @@ def asset_checkout(request, pk):
             messages.warning(request, f'Asset checked out but email notification failed: {str(e)}')
         
         return redirect('asset_detail', pk=pk)
+ main
 
-    return render(request, 'assets_app/checkout_form.html', {'form': form, 'asset': asset})
+    return render(request, 'assets_app/checkout_form.html', {
+        'form': form,
+        'asset': asset,
+        'available_qty': available_qty,
+    })
 
 
 @admin_required
@@ -262,6 +389,13 @@ def asset_checkin(request, checkout_pk):
         checkout.returned_at = timezone.now()
         checkout.logged_by   = request.user
         checkout.save()
+ main
+        # Clear current_holder if no active checkouts
+        if asset.checkouts.filter(returned_at__isnull=True).count() == 0:
+            asset.current_holder = ''
+            asset.save()
+        messages.success(request, f'{asset.asset_label} has been returned and marked available.')
+
         
         # Send email notification for asset return
         try:
@@ -302,9 +436,61 @@ def asset_checkin(request, checkout_pk):
         except Exception as e:
             messages.warning(request, f'Asset returned but email notification failed: {str(e)}')
         
+main
         return redirect('asset_detail', pk=asset.pk)
 
     return render(request, 'assets_app/checkin_confirm.html', {'checkout': checkout, 'asset': asset})
+
+
+@admin_required
+def checkout_list(request):
+    """Display all asset checkouts/distributions in a table."""
+    # Get all checkouts for display
+    all_checkouts = AssetCheckout.objects.select_related(
+        'asset', 'asset__department', 'checked_out_by_user', 'department', 'logged_by'
+    ).order_by('-checked_out_at')
+    
+    # Filter by status for the main display
+    status_filter = request.GET.get('status', '')
+    if status_filter == 'active':
+        checkouts = all_checkouts.filter(returned_at__isnull=True)
+    elif status_filter == 'returned':
+        checkouts = all_checkouts.filter(returned_at__isnull=False)
+    else:
+        checkouts = all_checkouts
+    
+    # Filter by department
+    dept_filter = request.GET.get('department', '')
+    if dept_filter:
+        checkouts = checkouts.filter(department__id=dept_filter)
+    
+    # Split the filtered list into active and returned groups for display.
+    if status_filter == 'active':
+        active_checkouts = checkouts
+        returned_checkouts = AssetCheckout.objects.none()
+    elif status_filter == 'returned':
+        active_checkouts = AssetCheckout.objects.none()
+        returned_checkouts = checkouts
+    else:
+        active_checkouts = checkouts.filter(returned_at__isnull=True)
+        returned_checkouts = checkouts.filter(returned_at__isnull=False)
+    
+    # Calculate statistics based on the current filtered selection.
+    active_checkouts_count = active_checkouts.count()
+    returned_checkouts_count = returned_checkouts.count()
+    
+    context = {
+        'checkouts': checkouts,
+        'active_checkouts': active_checkouts,
+        'returned_checkouts': returned_checkouts,
+        'status_filter': status_filter,
+        'dept_filter': dept_filter,
+        'departments': Department.objects.all(),
+        'today': timezone.now().date(),
+        'active_checkouts_count': active_checkouts_count,
+        'returned_checkouts_count': returned_checkouts_count,
+    }
+    return render(request, 'assets_app/checkout_list.html', context)
 
 
 # ──────────────────────────────────────────────
@@ -389,9 +575,13 @@ def staff_list(request):
 def staff_add(request):
     form = StaffProfileForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
+        password = form.cleaned_data.get('password')
+        if not password:
+            # For staff, set unusable password
+            password = None
         user = User.objects.create_user(
             username=form.cleaned_data['username'],
-            password=form.cleaned_data['password'],
+            password=password,
             first_name=form.cleaned_data['first_name'],
             last_name=form.cleaned_data['last_name'],
             email=form.cleaned_data['email'],
@@ -403,3 +593,212 @@ def staff_add(request):
         messages.success(request, f'Staff member {user.get_full_name()} created.')
         return redirect('staff_list')
     return render(request, 'assets_app/staff_form.html', {'form': form, 'title': 'Add Staff Member'})
+
+
+@admin_required
+def staff_edit(request, pk):
+    profile = get_object_or_404(StaffProfile, pk=pk)
+    form = StaffProfileForm(request.POST or None, instance=profile)
+    if request.method == 'POST' and form.is_valid():
+        password = form.cleaned_data.get('password')
+        if password:
+            profile.user.set_password(password)
+            profile.user.save()
+        form.save()
+        messages.success(request, f'Staff member {profile.user.get_full_name()} updated.')
+        return redirect('staff_list')
+    return render(request, 'assets_app/staff_form.html', {'form': form, 'title': 'Edit Staff Member'})
+
+
+@admin_required
+def staff_approve(request, pk):
+    profile = get_object_or_404(StaffProfile, pk=pk)
+    if request.method == 'POST':
+        profile.is_approved = True
+        profile.save()
+        messages.success(request, f'{profile.user.get_full_name()} has been approved.')
+        return redirect('staff_list')
+    return redirect('staff_list')
+
+
+# ──────────────────────────────────────────────
+#  ASSET TYPES MANAGEMENT
+# ──────────────────────────────────────────────
+
+@admin_required
+def asset_types_list(request):
+    """List all asset types."""
+    asset_types = AssetType.objects.all()
+    context = {
+        'asset_types': asset_types,
+    }
+    return render(request, 'assets_app/asset_types_list.html', context)
+
+
+@admin_required
+def asset_type_add(request):
+    """Add a new asset type."""
+    form = AssetTypeForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, f'Asset type "{form.cleaned_data["name"]}" created.')
+        return redirect('asset_types_list')
+    return render(request, 'assets_app/asset_type_form.html', {'form': form, 'title': 'Add Asset Type'})
+
+
+@admin_required
+def asset_type_edit(request, pk):
+    """Edit an asset type."""
+    asset_type = get_object_or_404(AssetType, pk=pk)
+    form = AssetTypeForm(request.POST or None, instance=asset_type)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, f'Asset type "{asset_type.name}" updated.')
+        return redirect('asset_types_list')
+    return render(request, 'assets_app/asset_type_form.html', {'form': form, 'title': f'Edit {asset_type.name}', 'asset_type': asset_type})
+
+
+@admin_required
+def asset_type_delete(request, pk):
+    """Delete an asset type."""
+    asset_type = get_object_or_404(AssetType, pk=pk)
+    if request.method == 'POST':
+        name = asset_type.name
+        asset_type.delete()
+        messages.success(request, f'Asset type "{name}" deleted.')
+        return redirect('asset_types_list')
+    return render(request, 'assets_app/asset_type_confirm_delete.html', {'asset_type': asset_type})
+
+
+@admin_required
+def clear_all_data(request):
+    """
+    Clear all data from the system.
+    Only superadmins are allowed to perform this action.
+    The current user is preserved to avoid logout and lockout.
+    """
+    profile = getattr(request.user, 'profile', None)
+    if not profile or profile.role != 'superadmin':
+        messages.error(request, 'Access denied. Only Superadmins can clear all system data.')
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        confirmation = request.POST.get('confirm', '').lower()
+        if confirmation == 'yes':
+            # 1. Delete asset-related records
+            AssetCheckout.objects.all().delete()
+            MaintenanceRecord.objects.all().delete()
+            AuditLog.objects.all().delete()
+            
+            # 2. Delete Assets, Types, and Departments
+            Asset.objects.all().delete()
+            AssetType.objects.all().delete()
+            # We exclude the current user's department if they are assigned to one? 
+            # No, user wants to "start afresh", so even departments should go.
+            # But wait, if we delete the department, the current user's profile.department will be null.
+            Department.objects.all().delete()
+            
+            # 3. Delete other users and profiles
+            # Preserve current user and their profile
+            current_user_id = request.user.pk
+            
+            # Delete other staff profiles
+            StaffProfile.objects.exclude(user_id=current_user_id).delete()
+            
+            # Delete other users
+            User.objects.exclude(pk=current_user_id).delete()
+            
+            messages.success(request, 'All data has been cleared successfully. You have been kept logged in to start afresh.')
+            return redirect('dashboard')
+        else:
+            messages.error(request, 'Confirmation failed. No data was deleted.')
+            return redirect('clear_all_data')
+    return render(request, 'assets_app/clear_data_confirm.html')
+
+
+@login_required
+def delete_all_data_in_department(request):
+    """Delete all data in the user's department. Only for users with department and admin role."""
+    if not hasattr(request.user, 'profile') or not request.user.profile.department:
+        messages.error(request, 'You must be assigned to a department to perform this action.')
+        return redirect('dashboard')
+    
+    profile = request.user.profile
+    if profile.role != 'superadmin':
+        messages.error(request, 'Access denied. Only superadmins can perform bulk data deletion.')
+        return redirect('dashboard')
+    
+    department = profile.department
+    
+    if request.method == 'POST':
+        confirmation = request.POST.get('confirm', '').lower()
+        if confirmation == 'yes':
+            # Delete all data in the department
+            assets_deleted = Asset.objects.filter(department=department).delete()
+            checkouts_deleted = AssetCheckout.objects.filter(department=department).delete()
+            maintenance_deleted = MaintenanceRecord.objects.filter(asset__department=department).delete()
+            messages.success(request, f'All data in {department.name} has been deleted successfully.')
+            return redirect('asset_list')
+        else:
+            messages.error(request, 'Confirmation failed. No data was deleted.')
+            return redirect('delete_all_data_in_department')
+    
+    assets_count = Asset.objects.filter(department=department).count()
+    checkouts_count = AssetCheckout.objects.filter(department=department).count()
+    maintenance_count = MaintenanceRecord.objects.filter(asset__department=department).count()
+    context = {
+        'department': department,
+        'assets_count': assets_count,
+        'checkouts_count': checkouts_count,
+        'maintenance_count': maintenance_count,
+    }
+    return render(request, 'assets_app/delete_data_department_confirm.html', context)
+
+
+# ──────────────────────────────────────────────
+#  DEPARTMENT MANAGEMENT
+# ──────────────────────────────────────────────
+
+@admin_required
+def departments_list(request):
+    """List all departments."""
+    departments = Department.objects.all()
+    context = {
+        'departments': departments,
+    }
+    return render(request, 'assets_app/departments_list.html', context)
+
+
+@admin_required
+def department_add(request):
+    """Add a new department."""
+    form = DepartmentForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, f'Department "{form.cleaned_data["name"]}" created.')
+        return redirect('departments_list')
+    return render(request, 'assets_app/department_form.html', {'form': form, 'title': 'Add Department'})
+
+
+@admin_required
+def department_edit(request, pk):
+    """Edit a department."""
+    department = get_object_or_404(Department, pk=pk)
+    form = DepartmentForm(request.POST or None, instance=department)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, f'Department "{department.name}" updated.')
+        return redirect('departments_list')
+    return render(request, 'assets_app/department_form.html', {'form': form, 'title': f'Edit {department.name}', 'department': department})
+
+
+@admin_required
+def department_delete(request, pk):
+    """Delete a department."""
+    department = get_object_or_404(Department, pk=pk)
+    if request.method == 'POST':
+        name = department.name
+        department.delete()
+        messages.success(request, f'Department "{name}" deleted.')
+        return redirect('departments_list')
+    return render(request, 'assets_app/department_confirm_delete.html', {'department': department})

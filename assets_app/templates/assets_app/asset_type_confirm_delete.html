@@ -1,0 +1,36 @@
+{% extends 'assets_app/base.html' %}
+
+{% block title %}Delete Asset Type{% endblock %}
+{% block breadcrumb %}SPH / ADMIN / ASSET TYPES / DELETE{% endblock %}
+{% block topbar_title %}Delete Asset Type{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-left">
+    <h1 class="page-heading">Delete Asset Type</h1>
+    <p class="page-sub">This action cannot be undone</p>
+  </div>
+</div>
+
+<div class="card" style="max-width:600px; border: 2px solid var(--red);">
+  <div class="card-header" style="background: var(--red); color: white;">
+    <span class="card-title">Are you sure?</span>
+  </div>
+  <div class="card-body">
+    <p style="margin-bottom: 16px;">You are about to delete the asset type:</p>
+    <div style="background: var(--surface); padding: 12px; border-radius: 4px; margin-bottom: 24px; font-weight: 600;">
+      {{ asset_type.name }}
+    </div>
+    
+    <form method="post">
+      {% csrf_token %}
+      <div style="display: flex; gap: 12px;">
+        <button type="submit" class="btn btn-danger">Yes, Delete Permanently</button>
+        <a href="{% url 'asset_types_list' %}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends 'assets_app/base.html' %}
+
+{% block title %}Asset Types — Swahilipot Hub Asset System{% endblock %}
+{% block breadcrumb %}SPH / ADMIN / ASSET TYPES{% endblock %}
+{% block topbar_title %}Asset Types Management{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'asset_type_add' %}" class="btn btn-primary btn-sm">+ Add Asset Type</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1 class="page-heading">Asset Types</h1>
+    <p class="page-sub">Manage all asset types in the system</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    {% if asset_types %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Description</th>
+              <th>Created</th>
+              <th style="width: 150px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for asset_type in asset_types %}
+              <tr>
+                <td style="font-weight: 600;">{{ asset_type.name }}</td>
+                <td style="color: var(--text-muted);">{{ asset_type.description|default:"—" }}</td>
+                <td style="font-size: 12px; color: var(--text-muted);">{{ asset_type.created_at|date:"M d, Y" }}</td>
+                <td style="text-align: center;">
+                  <a href="{% url 'asset_type_edit' asset_type.pk %}" class="btn btn-sm btn-secondary" title="Edit">Edit</a>
+                  <a href="{% url 'asset_type_delete' asset_type.pk %}" class="btn btn-sm btn-danger" title="Delete">Delete</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+        <p style="font-size: 16px; margin-bottom: 16px;">No asset types found</p>
+        <a href="{% url 'asset_type_add' %}" class="btn btn-primary">Create the first one</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

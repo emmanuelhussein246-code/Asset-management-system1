@@ -1,0 +1,46 @@
+{% extends 'assets_app/base.html' %}
+
+{% block title %}Delete All Data in Department{% endblock %}
+{% block breadcrumb %}SPH / DATA / DELETE ALL IN DEPARTMENT{% endblock %}
+{% block topbar_title %}Delete All Data in Department{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-left">
+    <h1 class="page-heading">Delete All Data in {{ department.name }}</h1>
+    <p class="page-sub">Remove all assets, checkouts, and maintenance records in your department</p>
+  </div>
+</div>
+
+<div class="card" style="max-width:700px; border: 3px solid var(--red);">
+  <div class="card-header" style="background: var(--red); color: white;">
+    <span class="card-title">⚠️ WARNING: DESTRUCTIVE ACTION</span>
+  </div>
+  <div class="card-body">
+    <div style="background: rgba(239, 68, 68, 0.1); border-left: 4px solid var(--red); padding: 16px; margin-bottom: 24px; border-radius: 4px;">
+      <p style="margin: 0; color: var(--red); font-weight: 600;">This will permanently delete:</p>
+      <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+        <li>All {{ assets_count }} assets in {{ department.name }}</li>
+        <li>All {{ checkouts_count }} checkouts in {{ department.name }}</li>
+        <li>All {{ maintenance_count }} maintenance records for assets in {{ department.name }}</li>
+      </ul>
+      <p style="margin: 8px 0 0 0; color: var(--red);">This action cannot be undone.</p>
+    </div>
+
+    <form method="post" style="background: var(--surface); padding: 16px; border-radius: 4px; margin-bottom: 24px;">
+      {% csrf_token %}
+      <div class="form-group">
+        <label style="color: var(--red); font-weight: 600;">Type "YES" to confirm:</label>
+        <input type="text" name="confirm" placeholder="Type YES to confirm" class="form-input" style="border-color: var(--red);" required>
+      </div>
+      
+      <div style="display: flex; gap: 12px;">
+        <button type="submit" class="btn btn-danger" style="background: var(--red);">Delete All Data</button>
+        <a href="{% url 'asset_list' %}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+
+    <p style="font-size: 12px; color: var(--text-muted); margin: 0;">This action is permanent and cannot be undone.</p>
+  </div>
+</div>

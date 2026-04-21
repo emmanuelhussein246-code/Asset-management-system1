@@ -90,8 +90,13 @@ def log_checkout_save(sender, instance, created, **kwargs):
                 f"{instance.checked_out_by_name} on {instance.returned_at:%Y-%m-%d %H:%M}."
             ),
         )
-        # Auto-update asset status back to available
-        Asset.objects.filter(pk=instance.asset.pk).update(status='available')
+        # Auto-update asset status based on remaining active checkouts
+        active_exists = AssetCheckout.objects.filter(
+            asset=instance.asset,
+            returned_at__isnull=True
+        ).exclude(pk=instance.pk).exists()
+        new_status = 'in_use' if active_exists else 'available'
+        Asset.objects.filter(pk=instance.asset.pk).update(status=new_status)
 
 
 @receiver(post_save, sender=MaintenanceRecord)

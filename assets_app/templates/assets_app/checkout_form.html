@@ -22,12 +22,35 @@
       {% endif %}
       <div class="form-grid">
         <div class="form-group full">
-          <label>Checked Out By (Full Name)</label>
+          <label>Person Receiving Asset (Full Name)</label>
           {{ form.checked_out_by_name }}
         </div>
         <div class="form-group full">
           <label>Staff Account — optional</label>
           {{ form.checked_out_by_user }}
+        </div>
+        <div class="form-group">
+          <label>Department</label>
+          {{ form.department }}
+        </div>
+        <div class="form-group full" style="font-size:12px;color:var(--mist);">
+          Available units: <strong>{{ available_qty }}</strong>
+        </div>
+        <div class="form-group">
+          <label>Quantity</label>
+          {{ form.quantity }}
+        </div>
+        <div class="form-group">
+          <label>Recipient Phone</label>
+          {{ form.recipient_phone }}
+        </div>
+        <div class="form-group">
+          <label>Recipient Email</label>
+          {{ form.recipient_email }}
+        </div>
+        <div class="form-group full">
+          <label>Recipient Kenyan ID</label>
+          {{ form.recipient_kenyan_id }}
         </div>
         <div class="form-group full">
           <label>Email for Notifications — optional</label>

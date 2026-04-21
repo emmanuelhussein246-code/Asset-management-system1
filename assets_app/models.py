@@ -18,16 +18,34 @@ class Department(models.Model):
         return self.name
 
 
+class AssetType(models.Model):
+    """Custom asset types that users can manage."""
+    name        = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = 'Asset Type'
+        verbose_name_plural = 'Asset Types'
+
+    def __str__(self):
+        return self.name
+
+
 class StaffProfile(models.Model):
     ROLE_CHOICES = [
         ('superadmin', 'Superadmin'),
-        ('dept_head',  'Department Head'),
+        ('hr',         'HR'),
+        ('admin',      'Admin'),
         ('staff',      'Staff'),
     ]
     user       = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True, related_name='members')
     role       = models.CharField(max_length=20, choices=ROLE_CHOICES, default='staff')
     phone      = models.CharField(max_length=20, blank=True)
+    kenyan_id  = models.CharField(max_length=20, blank=True, help_text="Kenyan ID number")
+    is_approved = models.BooleanField(default=False, help_text="Approved by superadmin or HR")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -47,12 +65,19 @@ label_validator = RegexValidator(
 class Asset(models.Model):
     TYPE_CHOICES = [
         ('electronics', 'Electronics'),
-        ('furniture',   'Furniture'),
-        ('equipment',   'Equipment'),
-        ('stationery',  'Stationery'),
-        ('vehicle',     'Vehicle'),
-        ('facility',    'Facility'),
-        ('other',       'Other'),
+        ('furniture', 'Furniture'),
+        ('equipment', 'Equipment'),
+        ('vehicles', 'Vehicles'),
+        ('stationery', 'Stationery & Supplies'),
+        ('facility', 'Facility'),
+        ('software', 'Software & Licenses'),
+        ('audiovisual', 'Audio/Visual'),
+        ('networking', 'Networking'),
+        ('office_equipment', 'Office Equipment'),
+        ('security', 'Security'),
+        ('appliances', 'Appliances'),
+        ('books_media', 'Books & Media'),
+        ('other', 'Other'),
     ]
     STATUS_CHOICES = [
         ('available',      'Available'),
@@ -68,7 +93,9 @@ class Asset(models.Model):
     description      = models.TextField()
     asset_type       = models.CharField(max_length=20, choices=TYPE_CHOICES)
     department       = models.ForeignKey(Department, on_delete=models.PROTECT, related_name='assets')
-    acquired_by_name = models.CharField(max_length=200, help_text='Full name of person who acquired this asset')
+    quantity         = models.PositiveIntegerField(default=1, help_text='Total number of units initially received')
+    current_holder   = models.CharField(max_length=200, blank=True, help_text='Name of the person currently holding this asset')
+    acquired_by_name = models.CharField(max_length=200, help_text='Full name of person who received this asset into the hub')
     acquired_by_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
                                          related_name='acquired_assets')
     acquisition_date = models.DateField()
@@ -94,6 +121,11 @@ class Asset(models.Model):
         return self.checkouts.filter(returned_at__isnull=True).first()
 
     @property
+    def available_quantity(self):
+        active_qty = self.checkouts.filter(returned_at__isnull=True).aggregate(total=models.Sum('quantity'))['total'] or 0
+        return max(self.quantity - active_qty, 0)
+
+    @property
     def is_overdue_maintenance(self):
         if self.next_maintenance:
             return self.next_maintenance < timezone.now().date()
@@ -114,7 +146,16 @@ class AssetCheckout(models.Model):
     checked_out_by_name  = models.CharField(max_length=200)
     checked_out_by_user  = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
                                               related_name='checkouts')
+ main
+    recipient_phone      = models.CharField(max_length=20, blank=True)
+    recipient_email      = models.EmailField(blank=True)
+    recipient_kenyan_id  = models.CharField(max_length=20, blank=True)
+    department           = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True,
+                                             related_name='asset_checkouts')
+    quantity             = models.PositiveIntegerField(default=1)
+
     email                = models.EmailField(max_length=254, blank=True, help_text="Email address for notifications")
+ main
     purpose              = models.CharField(max_length=300, blank=True)
     checked_out_at       = models.DateTimeField(default=timezone.now)
     expected_return      = models.DateField(null=True, blank=True)
@@ -129,7 +170,7 @@ class AssetCheckout(models.Model):
 
     def __str__(self):
         state = 'OUT' if not self.returned_at else 'RETURNED'
-        return f"{self.asset.asset_label} [{state}] — {self.checked_out_by_name}"
+        return f"{self.asset.asset_label} [{state}] — {self.checked_out_by_name} (Qty: {self.quantity})"
 
     @property
     def is_returned(self):
@@ -150,7 +191,11 @@ class MaintenanceRecord(models.Model):
     ]
     asset          = models.ForeignKey(Asset, on_delete=models.CASCADE, related_name='maintenance_records')
     title          = models.CharField(max_length=200)
-    details        = models.TextField(blank=True)
+    broken_items   = models.TextField(blank=True, help_text='List broken or damaged items being reported')
+    issue_details  = models.TextField(blank=True, help_text='More details about the problem or damage')
+    items_to_fix   = models.TextField(blank=True, help_text='Items that need to be fixed')
+    action_needed  = models.TextField(blank=True, help_text='Actions required to fix the items')
+    reported_by    = models.CharField(max_length=200, blank=True, help_text='Name of the person reporting this issue')
     status         = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     assigned_to    = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
                                        related_name='maintenance_tasks')

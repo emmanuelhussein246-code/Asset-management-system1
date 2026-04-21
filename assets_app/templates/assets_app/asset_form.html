@@ -49,34 +49,20 @@
         </div>
 
         <div class="form-group">
-          <label>Asset Type</label>
-          {{ form.asset_type }}
-        </div>
-
-        <div class="form-group">
           <label>Department</label>
           {{ form.department }}
         </div>
 
         <div class="form-group">
-          <label>Status</label>
-          {{ form.status }}
+          <label>Quantity</label>
+          {{ form.quantity }}
         </div>
 
         <div class="form-group">
-          <label>Acquisition Date</label>
-          {{ form.acquisition_date }}
-        </div>
-
-        <div class="form-group">
-          <label>Acquired By (Name)</label>
-          {{ form.acquired_by_name }}
-          <div class="form-hint">Full name of person who received the asset</div>
-        </div>
-
-        <div class="form-group">
-          <label>Acquired By (Staff Account) — optional</label>
-          {{ form.acquired_by_user }}
+          <label>New Department (optional)</label>
+          {{ form.new_department }}
+          <div class="form-hint">If the department does not exist, type its name here to create it</div>
+          {% if form.new_department.errors %}<div style="color:var(--red);font-size:12px;">{{ form.new_department.errors.0 }}</div>{% endif %}
         </div>
 
         <div class="form-group">

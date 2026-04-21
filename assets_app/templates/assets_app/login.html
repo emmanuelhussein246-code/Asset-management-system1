@@ -7,13 +7,15 @@
   <title>Sign In — Swahilipot Hub Asset System</title>
   <link rel="stylesheet" href="{% static 'css/main.css' %}"/>
 </head>
-<body>
+<body class="theme-dark">
 <div class="login-page">
 
   <!-- LEFT PANEL -->
   <div class="login-left">
     <div class="login-brand">
-      <div class="login-brand-icon">SP</div>
+      <div class="login-brand-logo">
+        <img src="{% static 'images/sph-logo.png' %}" alt="Swahilipot Hub Logo" style="width:50px; height:50px;"/>
+      </div>
       <div>
         <div class="login-brand-name">Swahilipot Hub</div>
         <div class="login-brand-sub" style="font-size:11px;color:rgba(255,255,255,0.35);">Mombasa, Kenya</div>
@@ -83,6 +85,10 @@
 
         <button type="submit" class="login-submit">Sign In →</button>
       </form>
+
+      <p style="margin-top:16px;text-align:center;">
+        <a href="{% url 'signup' %}" style="color:var(--primary); text-decoration:underline;">Create Account</a>
+      </p>
 
       <p style="margin-top:24px;font-size:12px;color:var(--mist);text-align:center;">
         Access restricted to authorised Swahilipot Hub staff only.
