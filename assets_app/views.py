@@ -51,10 +51,10 @@ def logout_view(request):
 
 def signup_view(request):
     """
-    Signup view — limited to 7 approved users max.
+    Signup view — limited to 4 user accounts max.
     """
-    if StaffProfile.objects.filter(is_approved=True).count() >= 7:
-        messages.error(request, 'Maximum number of approved users reached. Cannot create new accounts.')
+    if StaffProfile.objects.count() >= 4:
+        messages.error(request, 'Maximum number of user accounts reached. Cannot create new accounts.')
         return redirect('login')
 
     if request.method == 'POST':
@@ -65,7 +65,6 @@ def signup_view(request):
             username = form.cleaned_data['username'].strip()
             email = form.cleaned_data['email']
             phone = form.cleaned_data['phone']
-            kenyan_id = form.cleaned_data['kenyan_id']
             role = form.cleaned_data['role']
             password = form.cleaned_data['password']
 
@@ -86,7 +85,6 @@ def signup_view(request):
                 user=user,
                 role=role,
                 phone=phone,
-                kenyan_id=kenyan_id,
                 is_approved=False  # pending approval
             )
 
@@ -551,6 +549,10 @@ def staff_list(request):
 
 @admin_required
 def staff_add(request):
+    if StaffProfile.objects.count() >= 4:
+        messages.error(request, 'Maximum number of user accounts reached. Cannot create new staff accounts.')
+        return redirect('staff_list')
+
     form = StaffProfileForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         password = form.cleaned_data.get('password')

@@ -85,11 +85,10 @@ class StaffProfileForm(forms.ModelForm):
 
     class Meta:
         model = StaffProfile
-        fields = ['role', 'phone', 'kenyan_id', 'is_approved']
+        fields = ['role', 'phone', 'is_approved']
         widgets = {
             'role':       forms.Select(attrs={'class': 'form-input'}),
             'phone':      forms.TextInput(attrs={'class': 'form-input', 'placeholder': '+254 700 000 000'}),
-            'kenyan_id':  forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'e.g. 12345678'}),
         }
 
 
@@ -152,7 +151,6 @@ class SignupForm(forms.Form):
     username   = forms.CharField(max_length=150, widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Choose a username'}))
     email      = forms.EmailField(widget=forms.EmailInput(attrs={'class': 'form-input', 'placeholder': 'Email Address'}))
     phone      = forms.CharField(max_length=20, widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': '+254 700 000 000'}))
-    kenyan_id  = forms.CharField(max_length=20, widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Kenyan ID Number'}))
     role       = forms.ChoiceField(choices=StaffProfile.ROLE_CHOICES, widget=forms.Select(attrs={'class': 'form-input'}), initial='staff')
     password   = forms.CharField(min_length=6, widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': 'Password (min 6 characters)'}))
     confirm_password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': 'Confirm Password'}))

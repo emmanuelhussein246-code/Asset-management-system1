@@ -5,7 +5,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Sign Up — Swahilipot Hub Asset System</title>
-  <link rel="stylesheet" href="{% static 'css/main.css' %}"/>
+  <link rel="stylesheet" href="{% static 'css/main.css' %}?v=20260427-signup-blue"/>
 </head>
 <body class="theme-dark">
 <div class="login-page">
@@ -18,7 +18,7 @@
       </div>
       <div>
         <div class="login-brand-name">Swahilipot Hub</div>
-        <div class="login-brand-sub" style="font-size:11px;color:rgba(255,255,255,0.35);">Mombasa, Kenya</div>
+        <div class="login-brand-sub">Mombasa, Kenya</div>
       </div>
     </div>
 
@@ -105,14 +105,6 @@
         </div>
 
         <div class="login-form-group">
-          <label for="{{ form.kenyan_id.id_for_label }}">Kenyan ID</label>
-          {{ form.kenyan_id }}
-          {% if form.kenyan_id.errors %}
-            <div class="form-error">{{ form.kenyan_id.errors.0 }}</div>
-          {% endif %}
-        </div>
-
-        <div class="login-form-group">
           <label for="{{ form.password.id_for_label }}">Password</label>
           {{ form.password }}
           {% if form.password.errors %}
@@ -140,7 +132,7 @@
       </p>
 
       <p style="margin-top:24px;font-size:12px;color:var(--mist);text-align:center;">
-        Maximum 7 users allowed.
+        Maximum 4 users allowed.
       </p>
     </div>
   </div>
