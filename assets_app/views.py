@@ -184,32 +184,27 @@ def dashboard(request):
 
 @admin_required
 def asset_list(request):
-    query      = request.GET.get('q', '')
-    dept_id    = request.GET.get('dept', '')
+    query = request.GET.get('q', '')
     type_filter = request.GET.get('type', '')
     status_filter = request.GET.get('status', '')
 
-    assets = Asset.objects.select_related('department', 'acquired_by_user')
+    assets = Asset.objects.select_related('acquired_by_user')
 
     if query:
         assets = assets.filter(
             Q(asset_name__icontains=query) |
             Q(asset_label__icontains=query) |
-            Q(acquired_by_name__icontains=query)
+            Q(acquired_by_name__icontains=query) |
+            Q(current_holder__icontains=query)
         )
-    if dept_id:
-        assets = assets.filter(department_id=dept_id)
     if type_filter:
         assets = assets.filter(asset_type=type_filter)
     if status_filter:
         assets = assets.filter(status=status_filter)
 
-    departments = Department.objects.all()
     context = {
         'assets':        assets,
-        'departments':   departments,
         'query':         query,
-        'dept_id':       dept_id,
         'type_filter':   type_filter,
         'status_filter': status_filter,
         'type_choices':  Asset.TYPE_CHOICES,
@@ -223,12 +218,6 @@ def asset_add(request):
     form = AssetForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         asset = form.save(commit=False)
-        
-        # Handle new department creation
-        new_department_name = form.cleaned_data.get('new_department')
-        if new_department_name:
-            department, created = Department.objects.get_or_create(name=new_department_name.strip())
-            asset.department = department
         
         # Auto-set fields
         asset.acquisition_date = timezone.now()
@@ -273,13 +262,6 @@ def asset_edit(request, pk):
             return redirect('asset_detail', pk=asset.pk)
 
         asset = form.save(commit=False)
-        
-        # Handle new department creation
-        new_department_name = form.cleaned_data.get('new_department')
-        if new_department_name:
-            department, created = Department.objects.get_or_create(name=new_department_name.strip())
-            asset.department = department
-        
         asset.save()
         messages.success(request, f'Asset {asset.asset_label} updated.')
         return redirect('asset_detail', pk=asset.pk)
@@ -319,7 +301,6 @@ def asset_checkout(request, pk):
         checkout = form.save(commit=False)
         checkout.asset     = asset
         checkout.logged_by = request.user
- main
         if checkout.quantity > available_qty:
             form.add_error('quantity', f'Only {available_qty} unit(s) are available for this asset.')
         else:
@@ -371,7 +352,6 @@ def asset_checkout(request, pk):
             messages.warning(request, f'Asset checked out but email notification failed: {str(e)}')
         
         return redirect('asset_detail', pk=pk)
- main
 
     return render(request, 'assets_app/checkout_form.html', {
         'form': form,
@@ -389,7 +369,6 @@ def asset_checkin(request, checkout_pk):
         checkout.returned_at = timezone.now()
         checkout.logged_by   = request.user
         checkout.save()
- main
         # Clear current_holder if no active checkouts
         if asset.checkouts.filter(returned_at__isnull=True).count() == 0:
             asset.current_holder = ''
@@ -436,7 +415,6 @@ def asset_checkin(request, checkout_pk):
         except Exception as e:
             messages.warning(request, f'Asset returned but email notification failed: {str(e)}')
         
-main
         return redirect('asset_detail', pk=asset.pk)
 
     return render(request, 'assets_app/checkin_confirm.html', {'checkout': checkout, 'asset': asset})
@@ -622,53 +600,8 @@ def staff_approve(request, pk):
 
 
 # ──────────────────────────────────────────────
-#  ASSET TYPES MANAGEMENT
+#  SYSTEM MANAGEMENT
 # ──────────────────────────────────────────────
-
-@admin_required
-def asset_types_list(request):
-    """List all asset types."""
-    asset_types = AssetType.objects.all()
-    context = {
-        'asset_types': asset_types,
-    }
-    return render(request, 'assets_app/asset_types_list.html', context)
-
-
-@admin_required
-def asset_type_add(request):
-    """Add a new asset type."""
-    form = AssetTypeForm(request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        form.save()
-        messages.success(request, f'Asset type "{form.cleaned_data["name"]}" created.')
-        return redirect('asset_types_list')
-    return render(request, 'assets_app/asset_type_form.html', {'form': form, 'title': 'Add Asset Type'})
-
-
-@admin_required
-def asset_type_edit(request, pk):
-    """Edit an asset type."""
-    asset_type = get_object_or_404(AssetType, pk=pk)
-    form = AssetTypeForm(request.POST or None, instance=asset_type)
-    if request.method == 'POST' and form.is_valid():
-        form.save()
-        messages.success(request, f'Asset type "{asset_type.name}" updated.')
-        return redirect('asset_types_list')
-    return render(request, 'assets_app/asset_type_form.html', {'form': form, 'title': f'Edit {asset_type.name}', 'asset_type': asset_type})
-
-
-@admin_required
-def asset_type_delete(request, pk):
-    """Delete an asset type."""
-    asset_type = get_object_or_404(AssetType, pk=pk)
-    if request.method == 'POST':
-        name = asset_type.name
-        asset_type.delete()
-        messages.success(request, f'Asset type "{name}" deleted.')
-        return redirect('asset_types_list')
-    return render(request, 'assets_app/asset_type_confirm_delete.html', {'asset_type': asset_type})
-
 
 @admin_required
 def clear_all_data(request):
@@ -690,13 +623,8 @@ def clear_all_data(request):
             MaintenanceRecord.objects.all().delete()
             AuditLog.objects.all().delete()
             
-            # 2. Delete Assets, Types, and Departments
+            # 2. Delete Assets
             Asset.objects.all().delete()
-            AssetType.objects.all().delete()
-            # We exclude the current user's department if they are assigned to one? 
-            # No, user wants to "start afresh", so even departments should go.
-            # But wait, if we delete the department, the current user's profile.department will be null.
-            Department.objects.all().delete()
             
             # 3. Delete other users and profiles
             # Preserve current user and their profile
@@ -718,87 +646,6 @@ def clear_all_data(request):
 
 @login_required
 def delete_all_data_in_department(request):
-    """Delete all data in the user's department. Only for users with department and admin role."""
-    if not hasattr(request.user, 'profile') or not request.user.profile.department:
-        messages.error(request, 'You must be assigned to a department to perform this action.')
-        return redirect('dashboard')
-    
-    profile = request.user.profile
-    if profile.role != 'superadmin':
-        messages.error(request, 'Access denied. Only superadmins can perform bulk data deletion.')
-        return redirect('dashboard')
-    
-    department = profile.department
-    
-    if request.method == 'POST':
-        confirmation = request.POST.get('confirm', '').lower()
-        if confirmation == 'yes':
-            # Delete all data in the department
-            assets_deleted = Asset.objects.filter(department=department).delete()
-            checkouts_deleted = AssetCheckout.objects.filter(department=department).delete()
-            maintenance_deleted = MaintenanceRecord.objects.filter(asset__department=department).delete()
-            messages.success(request, f'All data in {department.name} has been deleted successfully.')
-            return redirect('asset_list')
-        else:
-            messages.error(request, 'Confirmation failed. No data was deleted.')
-            return redirect('delete_all_data_in_department')
-    
-    assets_count = Asset.objects.filter(department=department).count()
-    checkouts_count = AssetCheckout.objects.filter(department=department).count()
-    maintenance_count = MaintenanceRecord.objects.filter(asset__department=department).count()
-    context = {
-        'department': department,
-        'assets_count': assets_count,
-        'checkouts_count': checkouts_count,
-        'maintenance_count': maintenance_count,
-    }
-    return render(request, 'assets_app/delete_data_department_confirm.html', context)
-
-
-# ──────────────────────────────────────────────
-#  DEPARTMENT MANAGEMENT
-# ──────────────────────────────────────────────
-
-@admin_required
-def departments_list(request):
-    """List all departments."""
-    departments = Department.objects.all()
-    context = {
-        'departments': departments,
-    }
-    return render(request, 'assets_app/departments_list.html', context)
-
-
-@admin_required
-def department_add(request):
-    """Add a new department."""
-    form = DepartmentForm(request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        form.save()
-        messages.success(request, f'Department "{form.cleaned_data["name"]}" created.')
-        return redirect('departments_list')
-    return render(request, 'assets_app/department_form.html', {'form': form, 'title': 'Add Department'})
-
-
-@admin_required
-def department_edit(request, pk):
-    """Edit a department."""
-    department = get_object_or_404(Department, pk=pk)
-    form = DepartmentForm(request.POST or None, instance=department)
-    if request.method == 'POST' and form.is_valid():
-        form.save()
-        messages.success(request, f'Department "{department.name}" updated.')
-        return redirect('departments_list')
-    return render(request, 'assets_app/department_form.html', {'form': form, 'title': f'Edit {department.name}', 'department': department})
-
-
-@admin_required
-def department_delete(request, pk):
-    """Delete a department."""
-    department = get_object_or_404(Department, pk=pk)
-    if request.method == 'POST':
-        name = department.name
-        department.delete()
-        messages.success(request, f'Department "{name}" deleted.')
-        return redirect('departments_list')
-    return render(request, 'assets_app/department_confirm_delete.html', {'department': department})
+    """This function is deprecated and no longer used."""
+    messages.info(request, 'This feature has been disabled.')
+    return redirect('dashboard')

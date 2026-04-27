@@ -30,18 +30,6 @@ urlpatterns = [
     path('staff/<int:pk>/edit/',  views.staff_edit,  name='staff_edit'),
     path('staff/<int:pk>/approve/',  views.staff_approve,  name='staff_approve'),
 
-    # Asset Types
-    path('asset-types/',                       views.asset_types_list,     name='asset_types_list'),
-    path('asset-types/add/',                   views.asset_type_add,       name='asset_type_add'),
-    path('asset-types/<int:pk>/edit/',         views.asset_type_edit,      name='asset_type_edit'),
-    path('asset-types/<int:pk>/delete/',       views.asset_type_delete,    name='asset_type_delete'),
-
-    # Departments
-    path('departments/',                       views.departments_list,     name='departments_list'),
-    path('departments/add/',                   views.department_add,       name='department_add'),
-    path('departments/<int:pk>/edit/',         views.department_edit,      name='department_edit'),
-    path('departments/<int:pk>/delete/',       views.department_delete,    name='department_delete'),
-
     # Clear data
     path('clear-data/',  views.clear_all_data,  name='clear_all_data'),
     path('delete-data-department/', views.delete_all_data_in_department, name='delete_all_data_in_department'),

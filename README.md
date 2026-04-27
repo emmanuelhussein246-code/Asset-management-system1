@@ -101,7 +101,7 @@ Open: **http://127.0.0.1:8000**
 | Field    | Value                  |
 |----------|------------------------|
 | Username | `admin`                |
-| Password | `SwahilipotAdmin2024!` |
+| Password | `admin234`             |
 
 > ⚠ Change this immediately after first login via **Staff → Edit account**
 

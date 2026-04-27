@@ -72,7 +72,7 @@ print("=" * 50)
 if not User.objects.filter(username="admin").exists():
     admin_user = User.objects.create_superuser(
         username="admin",
-        password="SwahilipotAdmin2024!",
+        password="admin234",
         first_name="System",
         last_name="Admin",
         email="admin@swahilipothub.co.ke",
@@ -84,7 +84,7 @@ if not User.objects.filter(username="admin").exists():
     )
     print("  Superadmin created.")
     print("  Username : admin")
-    print("  Password : SwahilipotAdmin2024!")
+    print("  Password : admin234")
     print("  >>> Change this password immediately after first login!")
 else:
     print("  Superadmin 'admin' already exists — skipped.")
@@ -340,7 +340,7 @@ print("=" * 50)
 print("Seeding complete!")
 print(f"  Departments : {Department.objects.count()}")
 print(f"  Assets added: {created_count} ({skipped_count} skipped)")
-print(f"  Admin login : admin / SwahilipotAdmin2024!")
+print(f"  Admin login : admin / admin234")
 print("=" * 50)
 print("Next  -> python manage.py runserver")
 print("Then  -> http://127.0.0.1:8000")

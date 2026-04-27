@@ -4,68 +4,37 @@ from .models import Asset, AssetCheckout, MaintenanceRecord, Department, AssetTy
 
 
 class AssetForm(forms.ModelForm):
-    new_department = forms.CharField(
-        max_length=100,
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-input',
-            'placeholder': 'Or type a new department name here'
-        }),
-        label='New Department (optional)',
-        help_text='If the department does not exist, type its name here to create it'
-    )
-
     class Meta:
         model = Asset
         fields = [
-            'asset_name', 'asset_label', 'description', 'department', 'quantity',
-            'serial_number', 'next_maintenance', 'notes',
+            'asset_name', 'asset_label', 'description', 'quantity',
+            'current_holder', 'serial_number', 'next_maintenance', 'notes',
         ]
         widgets = {
             'asset_name':       forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'e.g. Dell Laptop 15 inch'}),
-            'asset_label':      forms.TextInput(attrs={'class': 'form-input mono-input', 'placeholder': 'SPH-ELEC-0001'}),
+            'asset_label':      forms.TextInput(attrs={'class': 'form-input mono-input', 'placeholder': 'SPH-0001'}),
             'description':      forms.Textarea(attrs={'class': 'form-input', 'rows': 4, 'placeholder': 'Condition, colour, specs, markings...'}),
-            'department':       forms.Select(attrs={'class': 'form-input'}),
             'quantity':         forms.NumberInput(attrs={'class': 'form-input', 'placeholder': 'Number of units received', 'min': 1}),
+            'current_holder':   forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Name of person who currently has this asset'}),
             'serial_number':    forms.TextInput(attrs={'class': 'form-input mono-input', 'placeholder': 'Manufacturer serial (optional)'}),
             'next_maintenance': forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
             'notes':            forms.Textarea(attrs={'class': 'form-input', 'rows': 3, 'placeholder': 'Any extra remarks'}),
         }
 
-    def clean(self):
-        cleaned_data = super().clean()
-        department = cleaned_data.get('department')
-        new_department = cleaned_data.get('new_department')
-
-        if not department and not new_department:
-            raise forms.ValidationError('Please select an existing department or create a new one.')
-
-        return cleaned_data
-
 
 class CheckoutForm(forms.ModelForm):
     class Meta:
         model = AssetCheckout
- main
         fields = [
-            'checked_out_by_name', 'checked_out_by_user', 'department',
+            'checked_out_by_name', 'checked_out_by_user',
             'quantity', 'purpose', 'expected_return',
             'recipient_phone', 'recipient_email', 'recipient_kenyan_id',
         ]
-
-        fields = ['checked_out_by_name', 'checked_out_by_user', 'email', 'purpose', 'expected_return']
- main
         widgets = {
             'checked_out_by_name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Full name of person receiving asset'}),
             'checked_out_by_user': forms.Select(attrs={'class': 'form-input'}),
- main
-            'department':          forms.Select(attrs={'class': 'form-input'}),
             'quantity':            forms.NumberInput(attrs={'class': 'form-input', 'placeholder': 'Number of units', 'min': 1}),
             'purpose':             forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Reason for taking the asset'}),
-
-            'email':              forms.EmailInput(attrs={'class': 'form-input', 'placeholder': 'Email for notifications (optional)'}),
-            'purpose':             forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Reason for taking asset'}),
- main
             'expected_return':     forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
             'recipient_phone':     forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Recipient phone number'}),
             'recipient_email':     forms.EmailInput(attrs={'class': 'form-input', 'placeholder': 'Recipient email address'}),
@@ -116,9 +85,8 @@ class StaffProfileForm(forms.ModelForm):
 
     class Meta:
         model = StaffProfile
-        fields = ['department', 'role', 'phone', 'kenyan_id', 'is_approved']
+        fields = ['role', 'phone', 'kenyan_id', 'is_approved']
         widgets = {
-            'department': forms.Select(attrs={'class': 'form-input'}),
             'role':       forms.Select(attrs={'class': 'form-input'}),
             'phone':      forms.TextInput(attrs={'class': 'form-input', 'placeholder': '+254 700 000 000'}),
             'kenyan_id':  forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'e.g. 12345678'}),
